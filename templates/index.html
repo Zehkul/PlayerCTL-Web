@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayerCTL Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 500px;
+        }
+        button {
+            margin: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        #status, #metadata {
+            margin-top: 1rem;
+        }
+        .slider-container {
+            margin-top: 1rem;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .seek-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        #ignoreList {
+            margin-top: 1rem;
+            text-align: left;
+        }
+        #ignoreList input {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PlayerCTL Web Interface</h1>
+        <div>
+            <button onclick="sendCommand('previous')">Previous</button>
+            <button onclick="sendCommand('play-pause')">Play/Pause</button>
+            <button onclick="sendCommand('next')">Next</button>
+        </div>
+        <div id="status"></div>
+        <div id="metadata"></div>
+        <div class="slider-container">
+            <label for="volumeSlider">Volume:</label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="seek-buttons">
+            <button onclick="seek(-30)">-30s</button>
+            <button onclick="seek(-5)">-5s</button>
+            <button onclick="seek(5)">+5s</button>
+            <button onclick="seek(30)">+30s</button>
+        </div>
+        <div class="slider-container">
+            <label for="seekSlider">Seek:</label>
+            <input type="range" id="seekSlider" min="0" max="100" value="0">
+        </div>
+        <div id="ignoreList">
+            <h3>Ignore List</h3>
+            {% for player in ignore_list %}
+            <div>
+                <input type="checkbox" id="{{ player }}" name="{{ player }}" checked>
+                <label for="{{ player }}">{{ player }}</label>
+            </div>
+            {% endfor %}
+            <input type="text" id="newPlayer" placeholder="Add new player">
+            <button onclick="addPlayer()">Add</button>
+        </div>
+    </div>
+
+    <script>
+    const volumeSlider = document.getElementById('volumeSlider');
+    const seekSlider = document.getElementById('seekSlider');
+    let updateInterval;
+    let isSeekSliderBeingDragged = false;
+
+    function sendCommand(command) {
+        fetch(`/api/${command}`)
+            .then(response => response.json())
+            .then(data => {
+                if (command === 'status') {
+                    document.getElementById('status').textContent = `Status: ${data.result}`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function updateMetadata() {
+        fetch('/api/metadata')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('metadata').textContent = `Now Playing: ${data.title} by ${data.artist}`;
+                seekSlider.max = data.length;
+                if (!isSeekSliderBeingDragged) {
+                    seekSlider.value = data.position;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function setVolume(volume) {
+        fetch(`/api/volume/${volume}`)
+            .then(response => response.json())
+            .then(data => console.log(data.result))
+            .catch(error => console.error('Error:', error));
+    }
+
+    function seek(seconds) {
+        fetch(`/api/seek/${seconds}`)
+            .then(response => response.json())
+            .then(data => console.log(data.result))
+            .catch(error => console.error('Error:', error));
+    }
+
+    function seekAbsolute(position) {
+        fetch(`/api/seek_absolute/${position}`)
+            .then(response => response.json())
+            .then(data => console.log(data.result))
+            .catch(error => console.error('Error:', error));
+    }
+
+    volumeSlider.addEventListener('input', (event) => {
+        setVolume(event.target.value);
+    });
+
+    seekSlider.addEventListener('mousedown', () => {
+        isSeekSliderBeingDragged = true;
+    });
+
+    seekSlider.addEventListener('mouseup', () => {
+        isSeekSliderBeingDragged = false;
+        seekAbsolute(seekSlider.value);
+    });
+
+    seekSlider.addEventListener('touchstart', () => {
+        isSeekSliderBeingDragged = true;
+    });
+
+    seekSlider.addEventListener('touchend', () => {
+        isSeekSliderBeingDragged = false;
+        seekAbsolute(seekSlider.value);
+    });
+
+    function updateStatus() {
+        sendCommand('status');
+        updateMetadata();
+        updateVolume();
+    }
+
+    function updateVolume() {
+        fetch('/api/volume')
+            .then(response => response.json())
+            .then(data => {
+                volumeSlider.value = data.volume;
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function updateIgnoreList() {
+        const checkboxes = document.querySelectorAll('#ignoreList input[type="checkbox"]');
+        const ignoreList = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.name);
+
+        fetch('/api/ignore_list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ignore_list: ignoreList}),
+        })
+        .then(response => response.json())
+        .then(data => console.log(data.result))
+        .catch(error => console.error('Error:', error));
+    }
+
+    function addPlayer() {
+        const newPlayer = document.getElementById('newPlayer').value.trim();
+        if (newPlayer) {
+            const ignoreList = document.getElementById('ignoreList');
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <input type="checkbox" id="${newPlayer}" name="${newPlayer}" checked>
+                <label for="${newPlayer}">${newPlayer}</label>
+            `;
+            ignoreList.insertBefore(div, document.getElementById('newPlayer'));
+            document.getElementById('newPlayer').value = '';
+            updateIgnoreList();
+        }
+    }
+
+    document.getElementById('ignoreList').addEventListener('change', updateIgnoreList);
+
+    // Update status every 5 seconds
+    updateInterval = setInterval(updateStatus, 5000);
+    updateStatus(); // Initial update
+</script>
+
+</body>
+</html>
