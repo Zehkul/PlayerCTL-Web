@@ -33,9 +33,10 @@ class JsonProtocolConnection:
     def recv(self):
         o = self.read_msg()
         if o:
-            print(o)
             return o
         self.recvbuf += self.sock.recv(1024)
+        if len(self.recvbuf) > 10000:
+            print("lololol")
         return self.recv()
 
     def __del__(self):
@@ -86,6 +87,29 @@ def fetch_syncplay_playlist(server, room, name):
             playlist = msg['Set'].get('playlistChange', {}).get('files', None)
 
     return playlist
+
+@app.route('/api/syncplay_current')
+def fetch_syncplay_current():
+    try:
+        config = get_syncplay_config()
+        server = f"{config['host']}:{config['port']}"
+        room = config['room']
+        name = config['name'] + "_playlist_fetcher"
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    con = JsonProtocolConnection(server)
+    con.send({"Hello": {"username": name, "room": {"name": room}, "version": "1.6.7"}})
+
+    current = None
+    while current is None:
+        if (msg := con.recv()) is None:
+            continue
+        if "List" in msg:
+            current = msg['List'].get(room, {}).get(name, {}).get('file', {}).get('name', None)
+
+    print(f"current: {current}")
+    return current
 
 @app.route('/api/syncplay_playlist', methods=['POST'])
 def update_syncplay_playlist():
