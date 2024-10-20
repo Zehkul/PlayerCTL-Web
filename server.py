@@ -35,8 +35,6 @@ class JsonProtocolConnection:
         if o:
             return o
         self.recvbuf += self.sock.recv(1024)
-        if len(self.recvbuf) > 10000:
-            print("lololol")
         return self.recv()
 
     def __del__(self):
@@ -108,7 +106,6 @@ def fetch_syncplay_current():
         if "List" in msg:
             current = msg['List'].get(room, {}).get(name, {}).get('file', {}).get('name', None)
 
-    print(f"current: {current}")
     return current
 
 @app.route('/api/syncplay_playlist', methods=['POST'])
@@ -189,7 +186,7 @@ def seek(seconds):
     player = request.args.get('player')
     try:
         seconds = int(seconds)  # Convert to integer, allowing for negative values
-        current_position = float(run_playerctl("position"), player=player)
+        current_position = float(run_playerctl("position", player=player))
         new_position = max(0, current_position + seconds)
         result = run_playerctl("position", [str(new_position)], player=player)
         return jsonify({"result": "Position changed" if result else "Error changing position"})
