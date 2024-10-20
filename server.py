@@ -12,6 +12,36 @@ app = Flask(__name__)
 
 IGNORE_LIST = ["kdeconnect"]
 
+class JsonProtocolConnection:
+    def __init__(self, server):
+        host, port = server.split(":")
+        port = int(port)
+        self.recvbuf = b""
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+
+    def send(self, obj):
+        obj = json.dumps(obj).encode("utf-8") + b"\r\n"
+        self.sock.sendall(obj)
+
+    def read_msg(self):
+        if b"\n" not in self.recvbuf:
+            return
+        msg, self.recvbuf = self.recvbuf.split(b"\n", maxsplit=1)
+        return json.loads(msg)
+
+    def recv(self):
+        o = self.read_msg()
+        if o:
+            print(o)
+            return o
+        self.recvbuf += self.sock.recv(1024)
+        return self.recv()
+
+    def __del__(self):
+        self.sock.close()
+
+
 @app.route('/api/syncplay_playlist')
 def get_syncplay_playlist():
     try:
@@ -44,33 +74,6 @@ def get_syncplay_config():
     }
 
 def fetch_syncplay_playlist(server, room, name):
-    class JsonProtocolConnection:
-        def __init__(self, server):
-            host, port = server.split(":")
-            port = int(port)
-            self.recvbuf = b""
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((host, port))
-
-        def send(self, obj):
-            obj = json.dumps(obj).encode("utf-8") + b"\r\n"
-            self.sock.sendall(obj)
-
-        def read_msg(self):
-            if b"\n" not in self.recvbuf:
-                return
-            msg, self.recvbuf = self.recvbuf.split(b"\n", maxsplit=1)
-            return json.loads(msg)
-
-        def recv(self):
-            o = self.read_msg()
-            if o:
-                return o
-            self.recvbuf += self.sock.recv(1024)
-            return self.recv()
-
-        def __del__(self):
-            self.sock.close()
 
     con = JsonProtocolConnection(server)
     con.send({"Hello": {"username": name, "room": {"name": room}, "version": "1.6.7"}})
@@ -83,6 +86,35 @@ def fetch_syncplay_playlist(server, room, name):
             playlist = msg['Set'].get('playlistChange', {}).get('files', None)
 
     return playlist
+
+@app.route('/api/syncplay_playlist', methods=['POST'])
+def update_syncplay_playlist():
+    try:
+        new_playlist = request.json['playlist']
+        config = get_syncplay_config()
+        server = f"{config['host']}:{config['port']}"
+        room = config['room']
+        name = config['name'] + "_playlist_updater"
+
+        update_syncplay_playlist_order(server, room, name, new_playlist)
+        return jsonify({"message": "Playlist updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def update_syncplay_playlist_order(server, room, name, new_playlist):
+    con = JsonProtocolConnection(server)
+    con.send({"Hello": {"username": name, "room": {"name": room}, "version": "1.6.7"}})
+
+    current_playlist = None
+    while current_playlist is None:
+        if (msg := con.recv()) is None:
+            continue
+        if "Set" in msg:
+            current_playlist = msg['Set'].get('playlistChange', {}).get('files', None)
+
+    con.send({'Set': {'playlistChange': {'user': name, 'files': new_playlist}}})
+
+    del con
 
 
 def run_playerctl(command, args=[], player=None):

@@ -45,6 +45,20 @@
         #playerSelect {
             margin-bottom: 1rem;
         }
+            #playlistItems li {
+        padding: 10px;
+        margin: 5px 0;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        touch-action: none; /* Prevents scrolling while dragging on touch devices */
+        text-align: left; /* Align text to the left */
+        word-break: break-all; /* Break words at any point */
+        overflow-wrap: break-word; /* Alternative to word-break for better readability */
+    }
+    .sortable-ghost {
+        opacity: 0.5;
+    }
     </style>
 </head>
 <body>
@@ -76,13 +90,16 @@
             <label for="seekSlider">Seek:</label>
             <input type="range" id="seekSlider" min="0" max="100" value="0">
         </div>
-            <div id="syncplayPlaylist">
+        <div id="syncplayPlaylist">
         <h3>Syncplay Playlist</h3>
         <ul id="playlistItems"></ul>
         <button onclick="fetchSyncplayPlaylist()">Refresh Playlist</button>
+        <button onclick="updateSyncplayPlaylist()">Save Playlist Order</button>
+        </div>
     </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <script>
         const playerSelect = document.getElementById('playerSelect');
         const volumeSlider = document.getElementById('volumeSlider');
@@ -188,18 +205,22 @@
         updateInterval = setInterval(updateStatus, 5000);
         updateStatus(); // Initial update
 
-        function fetchSyncplayPlaylist() {
+    let playlistSortable;
+
+    function fetchSyncplayPlaylist() {
         fetch('/api/syncplay_playlist')
             .then(response => response.json())
             .then(data => {
                 const playlistElement = document.getElementById('playlistItems');
                 playlistElement.innerHTML = '';
                 if (data.playlist && data.playlist.length > 0) {
-                    data.playlist.forEach(item => {
+                    data.playlist.forEach((item, index) => {
                         const li = document.createElement('li');
                         li.textContent = item;
+                        li.setAttribute('data-id', index);
                         playlistElement.appendChild(li);
                     });
+                    initSortable();
                 } else {
                     playlistElement.innerHTML = '<li>No items in playlist</li>';
                 }
@@ -210,8 +231,44 @@
             });
     }
 
+    function initSortable() {
+        if (playlistSortable) {
+            playlistSortable.destroy();
+        }
+        playlistSortable = new Sortable(document.getElementById('playlistItems'), {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function (evt) {
+                console.log('Item moved from ' + evt.oldIndex + ' to ' + evt.newIndex);
+            }
+        });
+    }
+
+    function updateSyncplayPlaylist() {
+        const playlistItems = Array.from(document.getElementById('playlistItems').children);
+        const newOrder = playlistItems.map(item => item.textContent);
+
+        fetch('/api/syncplay_playlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ playlist: newOrder }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Playlist updated:', data);
+            alert('Playlist order updated successfully!');
+        })
+        .catch(error => {
+            console.error('Error updating playlist:', error);
+            alert('Error updating playlist order');
+        });
+    }
+
     // Fetch the playlist when the page loads
     fetchSyncplayPlaylist();
+
     </script>
 </body>
 </html>
