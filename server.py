@@ -50,19 +50,20 @@ def set_volume(level):
 @app.route('/api/volume')
 def get_volume():
     result = run_playerctl("volume")
-    if result != "Error executing command":
+    if result:
         return jsonify({"volume": float(result)})
     return jsonify({"error": "Unable to get volume"}), 400
 
-@app.route('/api/seek/<int:seconds>')
+@app.route('/api/seek/<string:seconds>')
 def seek(seconds):
     try:
+        seconds = int(seconds)  # Convert to integer, allowing for negative values
         current_position = float(run_playerctl("position"))
         new_position = max(0, current_position + seconds)
         result = run_playerctl("position", [str(new_position)])
         return jsonify({"result": "Position changed" if result != "Error executing command" else "Error changing position"})
     except ValueError:
-        return jsonify({"error": "Unable to seek"}), 400
+        return jsonify({"error": "Invalid seek value"}), 400
 
 @app.route('/api/seek_absolute/<int:position>')
 def seek_absolute(position):
@@ -89,7 +90,7 @@ def get_metadata():
             "length": int(length) // 1000000,  # Convert microseconds to seconds
             "position": int(float(position))
         })
-    except (ValueError, subprocess.CalledProcessError):
+    except (ValueError, subprocess.CalledProcessError, TypeError):
         return jsonify({"error": "Unable to get metadata"}), 400
 
 @app.route('/api/ignore_list', methods=['GET', 'POST'])
