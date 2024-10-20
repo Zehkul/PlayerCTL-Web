@@ -42,18 +42,19 @@
             justify-content: center;
             margin-top: 1rem;
         }
-        #ignoreList {
-            margin-top: 1rem;
-            text-align: left;
-        }
-        #ignoreList input {
-            margin-right: 0.5rem;
+        #playerSelect {
+            margin-bottom: 1rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>PlayerCTL Web Interface</h1>
+        <select id="playerSelect">
+            {% for player in players %}
+            <option value="{{ player }}">{{ player }}</option>
+            {% endfor %}
+        </select>
         <div>
             <button onclick="sendCommand('previous')">Previous</button>
             <button onclick="sendCommand('play-pause')">Play/Pause</button>
@@ -75,146 +76,112 @@
             <label for="seekSlider">Seek:</label>
             <input type="range" id="seekSlider" min="0" max="100" value="0">
         </div>
-        <div id="ignoreList">
-            <h3>Ignore List</h3>
-            {% for player in ignore_list %}
-            <div>
-                <input type="checkbox" id="{{ player }}" name="{{ player }}" checked>
-                <label for="{{ player }}">{{ player }}</label>
-            </div>
-            {% endfor %}
-            <input type="text" id="newPlayer" placeholder="Add new player">
-            <button onclick="addPlayer()">Add</button>
-        </div>
     </div>
 
     <script>
-    const volumeSlider = document.getElementById('volumeSlider');
-    const seekSlider = document.getElementById('seekSlider');
-    let updateInterval;
-    let isSeekSliderBeingDragged = false;
+        const playerSelect = document.getElementById('playerSelect');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const seekSlider = document.getElementById('seekSlider');
+        let updateInterval;
+        let isSeekSliderBeingDragged = false;
 
-    function sendCommand(command) {
-        fetch(`/api/${command}`)
-            .then(response => response.json())
-            .then(data => {
-                if (command === 'status') {
-                    document.getElementById('status').textContent = `Status: ${data.result}`;
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function updateMetadata() {
-        fetch('/api/metadata')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('metadata').textContent = `Now Playing: ${data.title} by ${data.artist}`;
-                seekSlider.max = data.length;
-                if (!isSeekSliderBeingDragged) {
-                    seekSlider.value = data.position;
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function setVolume(volume) {
-        fetch(`/api/volume/${volume}`)
-            .then(response => response.json())
-            .then(data => console.log(data.result))
-            .catch(error => console.error('Error:', error));
-    }
-
-    function seek(seconds) {
-        fetch(`/api/seek/${seconds}`)
-            .then(response => response.json())
-            .then(data => console.log(data.result))
-            .catch(error => console.error('Error:', error));
-    }
-
-    function seekAbsolute(position) {
-        fetch(`/api/seek_absolute/${position}`)
-            .then(response => response.json())
-            .then(data => console.log(data.result))
-            .catch(error => console.error('Error:', error));
-    }
-
-    volumeSlider.addEventListener('input', (event) => {
-        setVolume(event.target.value);
-    });
-
-    seekSlider.addEventListener('mousedown', () => {
-        isSeekSliderBeingDragged = true;
-    });
-
-    seekSlider.addEventListener('mouseup', () => {
-        isSeekSliderBeingDragged = false;
-        seekAbsolute(seekSlider.value);
-    });
-
-    seekSlider.addEventListener('touchstart', () => {
-        isSeekSliderBeingDragged = true;
-    });
-
-    seekSlider.addEventListener('touchend', () => {
-        isSeekSliderBeingDragged = false;
-        seekAbsolute(seekSlider.value);
-    });
-
-    function updateStatus() {
-        sendCommand('status');
-        updateMetadata();
-        updateVolume();
-    }
-
-    function updateVolume() {
-        fetch('/api/volume')
-            .then(response => response.json())
-            .then(data => {
-                volumeSlider.value = data.volume;
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function updateIgnoreList() {
-        const checkboxes = document.querySelectorAll('#ignoreList input[type="checkbox"]');
-        const ignoreList = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.name);
-
-        fetch('/api/ignore_list', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ignore_list: ignoreList}),
-        })
-        .then(response => response.json())
-        .then(data => console.log(data.result))
-        .catch(error => console.error('Error:', error));
-    }
-
-    function addPlayer() {
-        const newPlayer = document.getElementById('newPlayer').value.trim();
-        if (newPlayer) {
-            const ignoreList = document.getElementById('ignoreList');
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <input type="checkbox" id="${newPlayer}" name="${newPlayer}" checked>
-                <label for="${newPlayer}">${newPlayer}</label>
-            `;
-            ignoreList.insertBefore(div, document.getElementById('newPlayer'));
-            document.getElementById('newPlayer').value = '';
-            updateIgnoreList();
+        function getSelectedPlayer() {
+            return playerSelect.value;
         }
-    }
 
-    document.getElementById('ignoreList').addEventListener('change', updateIgnoreList);
+        function sendCommand(command) {
+            const player = getSelectedPlayer();
+            fetch(`/api/${command}?player=${player}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (command === 'status') {
+                        document.getElementById('status').textContent = `Status: ${data.result}`;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
 
-    // Update status every 5 seconds
-    updateInterval = setInterval(updateStatus, 5000);
-    updateStatus(); // Initial update
-</script>
+        function updateMetadata() {
+            const player = getSelectedPlayer();
+            fetch(`/api/metadata?player=${player}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('metadata').textContent = `Now Playing: ${data.title} by ${data.artist}`;
+                    seekSlider.max = data.length;
+                    if (!isSeekSliderBeingDragged) {
+                        seekSlider.value = data.position;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
 
+        function setVolume(volume) {
+            const player = getSelectedPlayer();
+            fetch(`/api/volume/${volume}?player=${player}`)
+                .then(response => response.json())
+                .then(data => console.log(data.result))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function seek(seconds) {
+            const player = getSelectedPlayer();
+            fetch(`/api/seek/${seconds}?player=${player}`)
+                .then(response => response.json())
+                .then(data => console.log(data.result))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function seekAbsolute(position) {
+            const player = getSelectedPlayer();
+            fetch(`/api/seek_absolute/${position}?player=${player}`)
+                .then(response => response.json())
+                .then(data => console.log(data.result))
+                .catch(error => console.error('Error:', error));
+        }
+
+        volumeSlider.addEventListener('input', (event) => {
+            setVolume(event.target.value);
+        });
+
+        seekSlider.addEventListener('mousedown', () => {
+            isSeekSliderBeingDragged = true;
+        });
+
+        seekSlider.addEventListener('mouseup', () => {
+            isSeekSliderBeingDragged = false;
+            seekAbsolute(seekSlider.value);
+        });
+
+        seekSlider.addEventListener('touchstart', () => {
+            isSeekSliderBeingDragged = true;
+        });
+
+        seekSlider.addEventListener('touchend', () => {
+            isSeekSliderBeingDragged = false;
+            seekAbsolute(seekSlider.value);
+        });
+
+        function updateStatus() {
+            sendCommand('status');
+            updateMetadata();
+            updateVolume();
+        }
+
+        function updateVolume() {
+            const player = getSelectedPlayer();
+            fetch(`/api/volume?player=${player}`)
+                .then(response => response.json())
+                .then(data => {
+                    volumeSlider.value = data.volume;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        playerSelect.addEventListener('change', updateStatus);
+
+        // Update status every 5 seconds
+        updateInterval = setInterval(updateStatus, 5000);
+        updateStatus(); // Initial update
+    </script>
 </body>
 </html>
