@@ -2,10 +2,88 @@
 from flask import Flask, render_template, jsonify, request
 import subprocess
 import json
+import socket
+from configparser import ConfigParser
+from pathlib import Path
+
+SYNCPLAY_CONFIG_PATH = Path("~/.config/syncplay.ini").expanduser()
 
 app = Flask(__name__)
 
 IGNORE_LIST = ["kdeconnect"]
+
+@app.route('/api/syncplay_playlist')
+def get_syncplay_playlist():
+    try:
+        config = get_syncplay_config()
+        server = f"{config['host']}:{config['port']}"
+        room = config['room']
+        name = config['name'] + "_playlist_fetcher"
+
+        playlist = fetch_syncplay_playlist(server, room, name)
+        return jsonify({"playlist": playlist})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def get_syncplay_config():
+    parser = ConfigParser(strict=False)
+    if SYNCPLAY_CONFIG_PATH.exists():
+        with SYNCPLAY_CONFIG_PATH.open(encoding='utf_8_sig') as fp:
+            parser.read_file(fp)
+
+    host = parser.get('server_data', 'host', fallback='syncplay.pl')
+    port = parser.get('server_data', 'port', fallback='8999')
+    room = parser.get('client_settings', 'room', fallback='default')
+    name = parser.get('client_settings', 'name', fallback='Anonymous') + "_playlist_fetcher"
+
+    return {
+        "host": host,
+        "port": port,
+        "room": room,
+        "name": name
+    }
+
+def fetch_syncplay_playlist(server, room, name):
+    class JsonProtocolConnection:
+        def __init__(self, server):
+            host, port = server.split(":")
+            port = int(port)
+            self.recvbuf = b""
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((host, port))
+
+        def send(self, obj):
+            obj = json.dumps(obj).encode("utf-8") + b"\r\n"
+            self.sock.sendall(obj)
+
+        def read_msg(self):
+            if b"\n" not in self.recvbuf:
+                return
+            msg, self.recvbuf = self.recvbuf.split(b"\n", maxsplit=1)
+            return json.loads(msg)
+
+        def recv(self):
+            o = self.read_msg()
+            if o:
+                return o
+            self.recvbuf += self.sock.recv(1024)
+            return self.recv()
+
+        def __del__(self):
+            self.sock.close()
+
+    con = JsonProtocolConnection(server)
+    con.send({"Hello": {"username": name, "room": {"name": room}, "version": "1.6.7"}})
+
+    playlist = None
+    while playlist is None:
+        if (msg := con.recv()) is None:
+            continue
+        if "Set" in msg:
+            playlist = msg['Set'].get('playlistChange', {}).get('files', None)
+
+    return playlist
+
 
 def run_playerctl(command, args=[], player=None):
     ignore_args = [f"--ignore-player={player}" for player in IGNORE_LIST]
