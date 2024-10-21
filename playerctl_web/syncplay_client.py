@@ -48,23 +48,27 @@ class SyncplayConnection:
 
     def _ping_loop(self):
         while self.running:
-            current_time = time.time()
-            ping_message = {
-                "State": {
-                    "ping": {
-                        "latencyCalculation": current_time,
-                        "clientLatencyCalculation": current_time,
-                    },
-                    "playstate": {
-                        "position": 0,
-                        "paused": True,
-                        "doSeek": False,
-                        "setBy": self.name
+            try:
+                current_time = time.time()
+                ping_message = {
+                    "State": {
+                        "ping": {
+                            "latencyCalculation": current_time,
+                            "clientLatencyCalculation": current_time,
+                        },
+                        "playstate": {
+                            "position": 0,
+                            "paused": True,
+                            "doSeek": False,
+                            "setBy": self.name
+                        }
                     }
                 }
-            }
-            self.connection.send(ping_message)
-            time.sleep(1)  # Send a ping every second
+                self.connection.send(ping_message)
+            except BrokenPipeError:
+                print("BrokenPipeError, reconnecting")
+                self.start()
+            time.sleep(1)
 
     def _process_message(self, msg):
         with self.lock:
