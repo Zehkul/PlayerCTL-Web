@@ -65,6 +65,9 @@
         font-weight: bold;
         display: none;
       }
+      .current-item {
+        background-color: lightblue !important;
+    }
     </style>
   </head>
   <body>
@@ -225,32 +228,36 @@
       let currentItem = null;
 
       function fetchSyncplayPlaylist() {
-        fetch("/api/syncplay_playlist")
-          .then((response) => response.json())
-          .then((data) => {
-            if (!hasUnstagedChanges) {
-              serverPlaylist = data.playlist;
-              updatePlaylistDisplay(serverPlaylist);
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching Syncplay playlist:", error);
-            document.getElementById("playlistItems").innerHTML =
-              "<li>Error fetching playlist</li>";
-          });
-      }
+    Promise.all([
+        fetch('/api/syncplay_playlist').then(response => response.json()),
+        fetch('/api/syncplay_current').then(response => response.json())
+    ])
+    .then(([playlistData, currentItemData]) => {
+        if (!hasUnstagedChanges) {
+            serverPlaylist = playlistData.playlist;
+            updatePlaylistDisplay(serverPlaylist, currentItemData.current_item);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching Syncplay data:', error);
+        document.getElementById('playlistItems').innerHTML = '<li>Error fetching playlist</li>';
+    });
+}
 
-      function updatePlaylistDisplay(playlist) {
-        const playlistElement = document.getElementById("playlistItems");
-        playlistElement.innerHTML = "";
-        playlist.forEach((item, index) => {
-          const li = document.createElement("li");
-          li.textContent = item;
-          li.setAttribute("data-id", index);
-          playlistElement.appendChild(li);
-        });
-        initSortable();
-      }
+      function updatePlaylistDisplay(playlist, currentItem) {
+    const playlistElement = document.getElementById('playlistItems');
+    playlistElement.innerHTML = '';
+    playlist.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        li.setAttribute('data-id', index);
+        if (item === currentItem) {
+            li.classList.add('current-item');
+        }
+        playlistElement.appendChild(li);
+    });
+    initSortable();
+}
 
       function fetchCurrentItem() {
         fetch("/api/syncplay_current")
@@ -346,19 +353,18 @@
           });
       }
 
-      // Update playlist every 30 seconds if there are no unstaged changes
+      // Update playlist every 5 seconds if there are no unstaged changes
       setInterval(() => {
         if (!hasUnstagedChanges) {
           fetchSyncplayPlaylist();
         }
       }, 5000);
 
-      // Update status every 5 seconds
+      // Update status every 2 seconds
       updateInterval = setInterval(updateStatus, 2000);
       updateStatus(); // Initial update
       // Fetch the playlist when the page loads
       fetchSyncplayPlaylist();
-      fetchCurrentItem();
     </script>
   </body>
 </html>
