@@ -78,6 +78,8 @@ class SyncplayConnection:
                     self.playlist = set_data["playlistChange"].get("files", [])
                 if "ready" in set_data:
                     self.ready_states = set_data["ready"]
+                if "user" in set_data:
+                    self.current_item = set_data["user"].get(self.original_name, {}).get('file', {}).get('name', self.current_item)
             elif "List" in msg:
                 self.current_item = msg['List'].get(self.room, {}).get(self.original_name, {}).get('file', {}).get('name', None)
             elif "State" in msg:
