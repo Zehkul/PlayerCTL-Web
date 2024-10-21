@@ -6,6 +6,7 @@ from playerctl_web.config import IGNORE_LIST
 app = Flask(__name__)
 
 def run_playerctl(command, args=[], player=None):
+    print("running playerctl")
     ignore_args = [f"--ignore-player={player}" for player in IGNORE_LIST]
     player_arg = [f"--player={player}"] if player else []
     full_command = ["playerctl"] + ignore_args + player_arg + [command] + args
@@ -109,6 +110,3 @@ def get_metadata():
         })
     except (ValueError, subprocess.CalledProcessError, TypeError):
         return jsonify({"error": "Unable to get metadata"}), 400
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
