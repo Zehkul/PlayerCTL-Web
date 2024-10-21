@@ -67,7 +67,7 @@
       }
       .current-item {
         background-color: lightblue !important;
-    }
+      }
     </style>
   </head>
   <body>
@@ -228,47 +228,39 @@
       let currentItem = null;
 
       function fetchSyncplayPlaylist() {
-    Promise.all([
-        fetch('/api/syncplay_playlist').then(response => response.json()),
-        fetch('/api/syncplay_current').then(response => response.json())
-    ])
-    .then(([playlistData, currentItemData]) => {
-        if (!hasUnstagedChanges) {
-            serverPlaylist = playlistData.playlist;
-            updatePlaylistDisplay(serverPlaylist, currentItemData.current_item);
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching Syncplay data:', error);
-        document.getElementById('playlistItems').innerHTML = '<li>Error fetching playlist</li>';
-    });
-}
-
-      function updatePlaylistDisplay(playlist, currentItem) {
-    const playlistElement = document.getElementById('playlistItems');
-    playlistElement.innerHTML = '';
-    playlist.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        li.setAttribute('data-id', index);
-        if (item === currentItem) {
-            li.classList.add('current-item');
-        }
-        playlistElement.appendChild(li);
-    });
-    initSortable();
-}
-
-      function fetchCurrentItem() {
-        fetch("/api/syncplay_current")
-          .then((response) => response.json())
-          .then((data) => {
-            currentItem = data.current_item;
-            highlightCurrentItem();
+        Promise.all([
+          fetch("/api/syncplay_playlist").then((response) => response.json()),
+          fetch("/api/syncplay_current").then((response) => response.json()),
+        ])
+          .then(([playlistData, currentItemData]) => {
+            if (!hasUnstagedChanges) {
+              serverPlaylist = playlistData.playlist;
+              updatePlaylistDisplay(
+                serverPlaylist,
+                currentItemData.current_item,
+              );
+            }
           })
           .catch((error) => {
-            console.error("Error fetching current item:", error);
+            console.error("Error fetching Syncplay data:", error);
+            document.getElementById("playlistItems").innerHTML =
+              "<li>Error fetching playlist</li>";
           });
+      }
+
+      function updatePlaylistDisplay(playlist, currentItem) {
+        const playlistElement = document.getElementById("playlistItems");
+        playlistElement.innerHTML = "";
+        playlist.forEach((item, index) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          li.setAttribute("data-id", index);
+          if (item === currentItem) {
+            li.classList.add("current-item");
+          }
+          playlistElement.appendChild(li);
+        });
+        initSortable();
       }
 
       function highlightCurrentItem() {
