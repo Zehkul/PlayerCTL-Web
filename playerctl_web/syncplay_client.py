@@ -122,13 +122,12 @@ class JsonProtocolConnection:
         msg, self.recvbuf = self.recvbuf.split(b"\n", maxsplit=1)
         return json.loads(msg)
 
+
     def recv(self):
         with self.lock:
-            o = self.read_msg()
-            if o:
-                return o
-            self.recvbuf += self.sock.recv(1024)
-            return self.read_msg()
+            while not (o := self.read_msg()):
+                self.recvbuf += self.sock.recv(1024)
+            return o
 
     def __del__(self):
         self.sock.close()
