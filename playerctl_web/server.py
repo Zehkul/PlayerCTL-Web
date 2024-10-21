@@ -1,8 +1,9 @@
 import subprocess
 from flask import Flask, render_template, jsonify, request
 from playerctl_web import syncplay_connection
-from playerctl_web.config import IGNORE_LIST
 from flask_caching import Cache
+
+IGNORE_LIST = ["kdeconnect"]
 
 app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})

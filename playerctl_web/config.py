@@ -3,8 +3,6 @@ from pathlib import Path
 
 SYNCPLAY_CONFIG_PATH = Path("~/.config/syncplay.ini").expanduser()
 
-IGNORE_LIST = ["kdeconnect"]
-
 def get_syncplay_config():
     parser = ConfigParser(strict=False)
     if SYNCPLAY_CONFIG_PATH.exists():
