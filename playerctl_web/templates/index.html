@@ -322,6 +322,23 @@
       }
 
       function addLinkFromClipboard() {
+        if (!navigator.clipboard) {
+            var text = prompt('paste link please');
+            if (text.trim()) {
+              const playlistElement = document.getElementById("playlistItems");
+              const li = document.createElement("li");
+              li.textContent = text.trim();
+              li.setAttribute("data-id", playlistElement.children.length);
+              playlistElement.appendChild(li);
+              initSortable();
+              hasUnstagedChanges = true;
+              document.getElementById("unstaged-changes").style.display =
+                "block";
+            } else {
+              alert("Clipboard is empty or contains only whitespace.");
+            }
+            return;
+        }
         navigator.clipboard
           .readText()
           .then((text) => {
