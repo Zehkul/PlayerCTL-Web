@@ -1,5 +1,8 @@
 import subprocess
-from flask import Flask, render_template, jsonify, request
+import hashlib
+import base64
+from urllib.parse import unquote
+from flask import Flask, render_template, jsonify, request, redirect, make_response
 from playerctl_web import syncplay_connection
 from flask_caching import Cache
 
@@ -102,6 +105,44 @@ def seek_absolute(position):
     except ValueError:
         return jsonify({"error": "Unable to seek"}), 400
 
+def get_thumbnail_url(player):
+    for field in ["mpris:artUrl", "xesam:url"]:
+        if url := run_playerctl_cached("metadata", [field], player=player):
+            return url
+
+@cache.memoize(timeout=300)
+def generate_thumbnail(url):
+    thumbsize = 256
+    if url.startswith("file://"):
+        url = unquote(url[len("file://"):])
+    cmd = ["ffmpeg", "-hide_banner", "-skip_frame", "nokey", "-i", url,
+        "-vf", f"thumbnail=10,format=rgb24,scale='if(gte(dar,1),{thumbsize},{thumbsize}*dar):if(gte(dar,1),{thumbsize}/dar,{thumbsize}):flags=lanczos',setsar=1",
+        "-f", "image2pipe",
+        "-c:v", "png",
+        "-frames:v", "1",
+        "-"
+    ]
+    try:
+        return subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return None
+
+def generate_thumbnail_hash(url):
+    return base64.urlsafe_b64encode(hashlib.md5(url.encode("utf8")).digest()).decode("utf8")
+
+@app.route('/thumb/<string:hash_>.png')
+def get_thumbnail(hash_):
+    player = request.args.get('player')
+    url = get_thumbnail_url(player)
+    urlhash = generate_thumbnail_hash(url)
+    if hash_ != urlhash:
+        return redirect(url_for(f"/htumb/{urlhash}.png"))
+    if blob := generate_thumbnail(url):
+        response = make_response(blob)
+        response.headers.set('Content-Type', 'image/png')
+        return response
+    return jsonify({"error": "could not generate thumbnail"}), 500
+
 @app.route('/api/metadata')
 def get_metadata():
     player = request.args.get('player')
@@ -118,7 +159,8 @@ def get_metadata():
             "title": title,
             "artist": artist,
             "length": int(length) // 1000000,  # Convert microseconds to seconds
-            "position": int(float(position))
+            "position": int(float(position)),
+            "thumbnail": f"/thumb/{generate_thumbnail_hash(get_thumbnail_url(player))}.png"
         })
     except (ValueError, subprocess.CalledProcessError, TypeError):
         return jsonify({"error": "Unable to get metadata"}), 400

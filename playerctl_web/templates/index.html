@@ -84,6 +84,7 @@
         <button onclick="sendCommand('next')">Next</button>
       </div>
       <div id="status"></div>
+      <img id="thumb" />
       <div id="metadata"></div>
       <div class="slider-container">
         <label for="volumeSlider">Volume:</label>
@@ -152,6 +153,7 @@
           .then((data) => {
             document.getElementById("metadata").textContent =
               `Now Playing: ${data.title} by ${data.artist}`;
+            document.getElementById("thumb").src = data.thumbnail;
             seekSlider.max = data.length;
             if (!isSeekSliderBeingDragged) {
               seekSlider.value = data.position;
