@@ -136,7 +136,7 @@ def get_thumbnail(hash_):
     url = get_thumbnail_url(player)
     urlhash = generate_thumbnail_hash(url)
     if hash_ != urlhash:
-        return redirect(url_for(f"/htumb/{urlhash}.png"))
+        return redirect(url_for(f"/thumb/{urlhash}.png"))
     if blob := generate_thumbnail(url):
         response = make_response(blob)
         response.headers.set('Content-Type', 'image/png')
