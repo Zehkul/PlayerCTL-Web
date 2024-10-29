@@ -2,7 +2,7 @@ import subprocess
 import hashlib
 import base64
 from urllib.parse import unquote
-from flask import Flask, render_template, jsonify, request, redirect, make_response
+from flask import Flask, render_template, jsonify, request, redirect, make_response, url_for
 from playerctl_web import syncplay_connection
 from flask_caching import Cache
 
