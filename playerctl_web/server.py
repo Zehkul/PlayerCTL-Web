@@ -109,9 +109,12 @@ def get_thumbnail_url(player):
     for field in ["mpris:artUrl", "xesam:url"]:
         if url := run_playerctl_cached("metadata", [field], player=player):
             return url
+    return "https://fakeimg.pl/256x144/?text=%20"
 
 @cache.memoize(timeout=300)
 def generate_thumbnail(url):
+    if not url:
+        return None
     thumbsize = 256
     if url.startswith("file://"):
         url = unquote(url[len("file://"):])
@@ -136,7 +139,7 @@ def get_thumbnail(hash_):
     url = get_thumbnail_url(player)
     urlhash = generate_thumbnail_hash(url)
     if hash_ != urlhash:
-        return redirect(url_for(f"/thumb/{urlhash}.png"))
+        return redirect(url_for("get_thumbnail", hash_=urlhash))
     if blob := generate_thumbnail(url):
         response = make_response(blob)
         response.headers.set('Content-Type', 'image/png')
