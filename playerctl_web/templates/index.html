@@ -154,7 +154,7 @@
             document.getElementById("metadata").textContent =
               `Now Playing: ${data.title} by ${data.artist}`;
             if(data.thumbnail && document.getElementById("thumb").src != data.thumbnail) {
-              document.getElementById("thumb").src = data.thumbnail;
+              document.getElementById("thumb").src = `${data.thumbnail}?player=${player}`;
             }
             document.getElementById("thumb").style.display = data.thumbnail ? "inline-block" : "none";
             seekSlider.max = data.length;
