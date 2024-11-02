@@ -105,6 +105,17 @@ class SyncplayConnection:
             self.connection.send({'Set': {'playlistChange': {'user': self.name, 'files': new_playlist}}})
             self.playlist = new_playlist
 
+    def set_playlist_index(self, index):
+        with self.lock:
+            message = {
+                "Set": {
+                    "playlistIndex": {
+                        "index": index
+                    }
+                }
+            }
+            self.connection.send(message)
+
 class JsonProtocolConnection:
     def __init__(self, server):
         host, port = server.split(":")

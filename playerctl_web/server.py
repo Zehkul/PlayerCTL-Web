@@ -167,3 +167,26 @@ def get_metadata():
         })
     except (ValueError, subprocess.CalledProcessError, TypeError):
         return jsonify({"error": "Unable to get metadata"}), 400
+
+@app.route('/api/syncplay_set_index', methods=['POST'])
+def set_syncplay_index():
+    try:
+        data = request.json
+        if not data or not isinstance(data, dict):
+            return jsonify({"error": "Invalid request data"}), 400
+            
+        index = data.get('index')
+        if index is None:
+            return jsonify({"error": "Index is required"}), 400
+            
+        if not isinstance(index, int):
+            return jsonify({"error": "Index must be an integer"}), 400
+            
+        if syncplay_connection:
+            syncplay_connection.set_playlist_index(index)
+            return jsonify({"message": "Playlist index changed successfully"}), 200
+        else:
+            return jsonify({"error": "Syncplay connection not initialized"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
