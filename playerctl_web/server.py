@@ -163,7 +163,7 @@ def get_metadata():
             "artist": artist,
             "length": int(length) // 1000000,  # Convert microseconds to seconds
             "position": int(float(position)),
-            "thumbnail": f"/thumb/{generate_thumbnail_hash(get_thumbnail_url(player))}.png"
+            "thumbnail": url_for("get_thumbnail", hash_=generate_thumbnail_hash(get_thumbnail_url(player)), player=player)
         })
     except (ValueError, subprocess.CalledProcessError, TypeError):
         return jsonify({"error": "Unable to get metadata"}), 400
