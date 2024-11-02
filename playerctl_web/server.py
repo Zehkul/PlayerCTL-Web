@@ -115,13 +115,13 @@ def get_thumbnail_url(player):
 def generate_thumbnail(url):
     if not url:
         return None
-    thumbsize = 256
+    thumbsize = 512
     if url.startswith("file://"):
         url = unquote(url[len("file://"):])
     cmd = ["ffmpeg", "-hide_banner", "-skip_frame", "nokey", "-i", url,
         "-vf", f"thumbnail=10,format=rgb24,scale='if(gte(dar,1),{thumbsize},{thumbsize}*dar):if(gte(dar,1),{thumbsize}/dar,{thumbsize}):flags=lanczos',setsar=1",
         "-f", "image2pipe",
-        "-c:v", "png",
+        "-c:v", "libwebp",
         "-frames:v", "1",
         "-"
     ]
@@ -133,7 +133,7 @@ def generate_thumbnail(url):
 def generate_thumbnail_hash(url):
     return base64.urlsafe_b64encode(hashlib.md5(url.encode("utf8")).digest()).decode("utf8")
 
-@app.route('/thumb/<string:hash_>.png')
+@app.route('/thumb/<string:hash_>.webp')
 def get_thumbnail(hash_):
     player = request.args.get('player')
     url = get_thumbnail_url(player)
