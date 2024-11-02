@@ -119,7 +119,7 @@ def generate_thumbnail(url):
     if url.startswith("file://"):
         url = unquote(url[len("file://"):])
     cmd = ["ffmpeg", "-hide_banner", "-skip_frame", "nokey", "-i", url,
-        "-vf", f"thumbnail=10,format=rgb24,scale='if(gte(dar,1),{thumbsize},{thumbsize}*dar):if(gte(dar,1),{thumbsize}/dar,{thumbsize}):flags=lanczos',setsar=1",
+           "-vf", f"trim=0:180,thumbnail,format=rgb24,scale='if(gte(dar,1),{thumbsize},{thumbsize}*dar):if(gte(dar,1),{thumbsize}/dar,{thumbsize}):flags=lanczos',setsar=1",
         "-f", "image2pipe",
         "-c:v", "libwebp",
         "-frames:v", "1",
