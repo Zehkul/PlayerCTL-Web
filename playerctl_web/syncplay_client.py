@@ -25,7 +25,6 @@ class SyncplayConnection:
         self.connection.send({"Hello": {"username": self.name, "room": {"name": self.room}, "version": "1.6.7"}})
         threading.Thread(target=self._receive_loop, daemon=True).start()
         threading.Thread(target=self._process_loop, daemon=True).start()
-        threading.Thread(target=self._ping_loop, daemon=True).start()
 
     def stop(self):
         self.running = False
@@ -46,30 +45,6 @@ class SyncplayConnection:
             except queue.Empty:
                 continue
 
-    def _ping_loop(self):
-        while self.running:
-            try:
-                current_time = time.time()
-                ping_message = {
-                    "State": {
-                        "ping": {
-                            "latencyCalculation": current_time,
-                            "clientLatencyCalculation": current_time,
-                        },
-                        "playstate": {
-                            "position": 0,
-                            "paused": True,
-                            "doSeek": False,
-                            "setBy": self.name
-                        }
-                    }
-                }
-                self.connection.send(ping_message)
-            except BrokenPipeError:
-                print("BrokenPipeError, reconnecting")
-                self.start()
-            time.sleep(1)
-
     def _process_message(self, msg):
         with self.lock:
             if "Set" in msg:
@@ -83,11 +58,39 @@ class SyncplayConnection:
             elif "List" in msg:
                 self.current_item = msg['List'].get(self.room, {}).get(self.original_name, {}).get('file', {}).get('name', None)
             elif "State" in msg:
-                # Stub for future implementation if needed
-                pass
+                state_data = msg["State"]
+                if "ping" in state_data:
+                    self._handle_ping(state_data)
             elif "Error" in msg:
                 print(f"Received error from server: {msg['Error']}")
             self.last_update = time.time()
+
+    def _handle_ping(self, state_data):
+        current_time = time.time()
+
+        server_ping = state_data.get("ping", {})
+        server_latency = server_ping.get("latencyCalculation")
+
+        client_rtt = 0.02 # no one cares about our ping
+
+        ping_response = {
+            "State": {
+                "playstate": {
+                    "position": state_data["playstate"]["position"],
+                    "paused": state_data["playstate"]["paused"]
+                },
+                "ping": {
+                    "latencyCalculation": server_latency,
+                    "clientLatencyCalculation": current_time,
+                    "clientRtt": client_rtt
+                }
+            }
+        }
+
+        if "ignoringOnTheFly" in state_data:
+            ping_response["State"]["ignoringOnTheFly"] = state_data["ignoringOnTheFly"]
+
+        self.connection.send(ping_response)
 
     def get_playlist(self):
         with self.lock:
