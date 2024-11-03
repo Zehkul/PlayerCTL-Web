@@ -77,9 +77,11 @@ def _generate_thumbnail(url):
         infile = url
     ffprobe = get_ffprobe(infile)
     for idx in get_pic_attachments(ffprobe):
-        return thumbnail_from_attachment(infile, idx)
+        if blob := thumbnail_from_attachment(infile, idx)
+            return blob
     for idx in get_pic_and_video_streams(ffprobe):
-        return thumbnail_from_videostream(infile, idx)
+        if blob := thumbnail_from_videostream(infile, idx)
+            return blob
     return None
 
 def generate(url):
