@@ -42,7 +42,7 @@ def get_pic_attachments(ffprobe):
 
 def outputoptions():
     return [
-        "-vf", f"trim=0:180,thumbnail,format=rgb24,scale={THUMBSIZE}*min(1\,dar):{THUMBSIZE}/max(1\,dar):flags=lanczos,setsar=1",
+        "-vf", f"trim=0:180,thumbnail,scale=trunc({THUMBSIZE}*min(1\\,dar)/2)*2:trunc({THUMBSIZE}/max(1\\,dar)/2)*2:flags=lanczos,setsar=1,format=yuv420p",
         "-f", "image2pipe",
         "-c:v", "libwebp",
         "-frames:v", "1",
