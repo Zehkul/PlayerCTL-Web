@@ -1,6 +1,7 @@
 import subprocess
 import hashlib
 import base64
+import playerctl_web.thumbnail as thumbnail
 from urllib.parse import unquote
 from flask import Flask, render_template, jsonify, request, redirect, make_response, url_for
 from playerctl_web import syncplay_connection
@@ -10,6 +11,8 @@ IGNORE_LIST = ["kdeconnect"]
 
 app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+thumbnail.init_flask_cache(app)
 
 @cache.memoize(timeout=1)
 def run_playerctl_cached(command, args=[], player=None):
@@ -109,26 +112,7 @@ def get_thumbnail_url(player):
     for field in ["mpris:artUrl", "xesam:url"]:
         if url := run_playerctl_cached("metadata", [field], player=player):
             return url
-    return "https://fakeimg.pl/256x144/?text=%20"
-
-@cache.memoize(timeout=300)
-def generate_thumbnail(url):
-    if not url:
-        return None
-    thumbsize = 512
-    if url.startswith("file://"):
-        url = unquote(url[len("file://"):])
-    cmd = ["ffmpeg", "-hide_banner", "-skip_frame", "nokey", "-i", url,
-           "-vf", f"trim=0:180,thumbnail,format=rgb24,scale='if(gte(dar,1),{thumbsize},{thumbsize}*dar):if(gte(dar,1),{thumbsize}/dar,{thumbsize}):flags=lanczos',setsar=1",
-        "-f", "image2pipe",
-        "-c:v", "libwebp",
-        "-frames:v", "1",
-        "-"
-    ]
-    try:
-        return subprocess.check_output(cmd)
-    except subprocess.CalledProcessError:
-        return None
+    return "https://fakeimg.pl/{thumbnail.THUMBSIZE}x{int(thumbnail.THUMBSIZE*9/16)}/?text=%20"
 
 def generate_thumbnail_hash(url):
     return base64.urlsafe_b64encode(hashlib.md5(url.encode("utf8")).digest()).decode("utf8")
@@ -140,9 +124,9 @@ def get_thumbnail(hash_):
     urlhash = generate_thumbnail_hash(url)
     if hash_ != urlhash:
         return redirect(url_for("get_thumbnail", hash_=urlhash, player=player))
-    if blob := generate_thumbnail(url):
+    if blob := thumbnail.generate(url):
         response = make_response(blob)
-        response.headers.set('Content-Type', 'image/png')
+        response.headers.set('Content-Type', 'image/webp')
         return response
     return jsonify({"error": "could not generate thumbnail"}), 500
 
