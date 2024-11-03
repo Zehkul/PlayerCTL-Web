@@ -112,7 +112,7 @@ def get_thumbnail_url(player):
     for field in ["mpris:artUrl", "xesam:url"]:
         if url := run_playerctl_cached("metadata", [field], player=player):
             return url
-    return "https://fakeimg.pl/{thumbnail.THUMBSIZE}x{int(thumbnail.THUMBSIZE*9/16)}/?text=%20"
+    return f"https://fakeimg.pl/{thumbnail.THUMBSIZE}x{int(thumbnail.THUMBSIZE*9/16)}/?text=%20"
 
 def generate_thumbnail_hash(url):
     return base64.urlsafe_b64encode(hashlib.md5(url.encode("utf8")).digest()).decode("utf8")
