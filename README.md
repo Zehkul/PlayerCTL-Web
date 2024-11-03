@@ -1,7 +1,3 @@
-#todo:
+# PlayerCTL-Web
 
-Verstehen wie genau das Syncplay Protokoll funktioniert und warum man beim abspielen gekickt wird
-
-dynamisches player list update
-
-Android App?
+Web-basiertes Inerface für playerctl & syncplay
