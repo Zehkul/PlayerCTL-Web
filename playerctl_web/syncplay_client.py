@@ -25,6 +25,7 @@ class SyncplayConnection:
         self.connection.send({"Hello": {"username": self.name, "room": {"name": self.room}, "version": "1.6.7"}})
         threading.Thread(target=self._receive_loop, daemon=True).start()
         threading.Thread(target=self._process_loop, daemon=True).start()
+        self.set_ready()
 
     def stop(self):
         self.running = False
@@ -54,7 +55,20 @@ class SyncplayConnection:
                 if "ready" in set_data:
                     self.ready_states = set_data["ready"]
                 if "user" in set_data:
-                    self.current_item = set_data["user"].get(self.original_name, {}).get('file', {}).get('name', self.current_item)
+                    if self.original_name in set_data["user"]:
+                        user_file = set_data["user"].get(self.original_name, {}).get('file', {})
+                        current_item = user_file.get('name', self.current_item)
+                        self.current_item = current_item
+                        file_message = {
+                            "Set": {
+                                "file": {
+                                    "name": user_file.get('name'),
+                                    "duration": user_file.get('duration'),
+                                    "size": user_file.get('size')
+                                }
+                            }
+                        }
+                        self.connection.send(file_message)
             elif "List" in msg:
                 self.current_item = msg['List'].get(self.room, {}).get(self.original_name, {}).get('file', {}).get('name', None)
             elif "State" in msg:
@@ -115,6 +129,19 @@ class SyncplayConnection:
                 }
             }
             self.connection.send(message)
+
+    def set_ready(self):
+        with self.lock:
+            message = {
+                "Set": {
+                    "ready": {
+                        "isReady": True,
+                        "manuallyInitiated": True
+                    }
+                }
+            }
+            self.connection.send(message)
+
 
 class JsonProtocolConnection:
     def __init__(self, server):
