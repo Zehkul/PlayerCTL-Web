@@ -7,6 +7,9 @@
         <link rel="stylesheet" href="/static/css/styles.css" />
     </head>
     <body>
+        <div id="interaction-warning" style="color: orange; font-size: 0.8rem; margin-top: 10px; display: none;">
+            Please interact with the page once to enable media controls
+        </div>
         <div class="container">
             <h1>PlayerCTL Web Interface</h1>
             <select id="playerSelect">
@@ -55,9 +58,6 @@
         <audio id="silentAudio" loop preload="auto">
             <source src="{{ url_for('static', filename='audio/silent.mp3') }}" type="audio/mp3">
         </audio>
-        <div id="interaction-warning" style="color: orange; font-size: 0.8rem; margin-top: 10px; display: none;">
-            Please interact with the page once to enable media controls
-        </div>
 
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
         <script src="/static/js/player.js"></script>

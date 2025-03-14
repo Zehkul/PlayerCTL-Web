@@ -72,3 +72,19 @@ input[type="range"] {
   height: auto;
   object-fit: contain;
 }
+#interaction-warning {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  background-color: #fff3cd;
+  color: #856404;
+  z-index: 1000;
+}
+
+/* Adjust the main container to accommodate the warning */
+.container {
+  margin-top: 40px; /* Adjust this value based on the height of your warning */
+}
