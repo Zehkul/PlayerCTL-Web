@@ -61,3 +61,14 @@ input[type="range"] {
 .current-item {
     background-color: lightblue !important;
 }
+#playlistItems li {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+#thumb {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}

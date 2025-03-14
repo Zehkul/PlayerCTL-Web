@@ -7,7 +7,6 @@ let isServerPlaying = false;
 let isLocalStatusChange = false;
 let updateInterval;
 let serverPlaylist = [];
-let hasUnstagedChanges = false;
 let isSeekSliderBeingDragged = false;
 
 function getSelectedPlayer() {
@@ -160,13 +159,11 @@ function fetchSyncplayPlaylist() {
         fetch("/api/syncplay_current").then((response) => response.json()),
     ])
         .then(([playlistData, currentItemData]) => {
-            if (!hasUnstagedChanges) {
                 serverPlaylist = playlistData.playlist;
                 updatePlaylistDisplay(
                     serverPlaylist,
                     currentItemData.current_item,
                 );
-            }
         })
         .catch((error) => {
             console.error("Error fetching Syncplay data:", error);
@@ -210,91 +207,81 @@ function initSortable() {
     {
       animation: 150,
       ghostClass: "sortable-ghost",
-      delay: 500, // Add a 500ms delay before dragging starts
+      delay: 500, // 500ms delay before dragging starts
       delayOnTouchOnly: true, // Only apply delay for touch devices
       onEnd: function (evt) {
-        hasUnstagedChanges = true;
-        document.getElementById("unstaged-changes").style.display = "block";
+        // Send the updated playlist to the server immediately
+        updateSyncplayPlaylist();
       },
     },
   );
 }
 
 function updateSyncplayPlaylist() {
-    const playlistItems = Array.from(
-        document.getElementById("playlistItems").children,
-    );
-    const newOrder = playlistItems.map((item) => item.textContent);
+  const playlistItems = Array.from(
+    document.getElementById("playlistItems").children,
+  );
+  const newOrder = playlistItems.map((item) => item.textContent);
 
-    fetch("/api/syncplay_playlist", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ playlist: newOrder }),
+  fetch("/api/syncplay_playlist", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ playlist: newOrder }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("Playlist updated:", data);
+      serverPlaylist = newOrder;
     })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log("Playlist updated:", data);
-            alert("Playlist order updated successfully!");
-            hasUnstagedChanges = false;
-            document.getElementById("unstaged-changes").style.display = "none";
-            serverPlaylist = newOrder;
-        })
-        .catch((error) => {
-            console.error("Error updating playlist:", error);
-            alert("Error updating playlist order");
-        });
+    .catch((error) => {
+      console.error("Error updating playlist:", error);
+    });
 }
 
 function addLinkFromClipboard() {
-    if (!navigator.clipboard) {
-        var text = prompt('paste link please');
-        if (text.trim()) {
-            const playlistElement = document.getElementById("playlistItems");
-            const li = document.createElement("li");
-            li.textContent = text.trim();
-            li.setAttribute("data-id", playlistElement.children.length);
-            playlistElement.appendChild(li);
-            initSortable();
-            hasUnstagedChanges = true;
-            document.getElementById("unstaged-changes").style.display =
-                "block";
-        } else {
-            alert("Clipboard is empty or contains only whitespace.");
-        }
-        return;
-    }
-    navigator.clipboard
-        .readText()
-        .then((text) => {
-            if (text.trim()) {
-                const playlistElement = document.getElementById("playlistItems");
-                const li = document.createElement("li");
-                li.textContent = text.trim();
-                li.setAttribute("data-id", playlistElement.children.length);
-                playlistElement.appendChild(li);
-                initSortable();
-                hasUnstagedChanges = true;
-                document.getElementById("unstaged-changes").style.display =
-                    "block";
-            } else {
-                alert("Clipboard is empty or contains only whitespace.");
-            }
-        })
-        .catch((err) => {
-            console.error("Failed to read clipboard contents: ", err);
-            alert(
-                "Failed to read clipboard contents. Please check your browser permissions.",
-            );
-        });
+  if (!navigator.clipboard) {
+      var text = prompt('paste link please');
+      if (text.trim()) {
+        const playlistElement = document.getElementById("playlistItems");
+        const li = document.createElement("li");
+        li.textContent = text.trim();
+        li.setAttribute("data-id", playlistElement.children.length);
+        playlistElement.appendChild(li);
+        initSortable();
+        updateSyncplayPlaylist(); // Send update immediately
+      } else {
+        alert("Clipboard is empty or contains only whitespace.");
+      }
+      return;
+  }
+  navigator.clipboard
+    .readText()
+    .then((text) => {
+      if (text.trim()) {
+        const playlistElement = document.getElementById("playlistItems");
+        const li = document.createElement("li");
+        li.textContent = text.trim();
+        li.setAttribute("data-id", playlistElement.children.length);
+        playlistElement.appendChild(li);
+        initSortable();
+        updateSyncplayPlaylist(); // Send update immediately
+      } else {
+        alert("Clipboard is empty or contains only whitespace.");
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to read clipboard contents: ", err);
+      alert(
+        "Failed to read clipboard contents. Please check your browser permissions.",
+      );
+    });
 }
 
 // Update playlist every 5 seconds if there are no unstaged changes
 setInterval(() => {
-    if (!hasUnstagedChanges) {
         fetchSyncplayPlaylist();
-    }
 }, 5000);
 
 // Update status every 2 seconds
