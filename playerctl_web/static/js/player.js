@@ -228,8 +228,12 @@ function initSortable() {
         {
             animation: 150,
             ghostClass: "sortable-ghost",
-            delay: 500,
+            delay: 200,
+            touchStartThreshold: 15,     // Allow finger movement within 15px radius
             delayOnTouchOnly: true,
+            forceFallback: true,             // Keep fallback enabled
+            fallbackOnBody: true,             // Append clone to body for correct positioning
+            fallbackTolerance: 10,             // Small movement tolerance before drag starts
             onStart: function (evt) {
                 isDragging = true;
             },
