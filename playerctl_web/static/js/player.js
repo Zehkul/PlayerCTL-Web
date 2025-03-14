@@ -372,7 +372,7 @@ function setupMediaSessionHandlers() {
     });
 
     navigator.mediaSession.setActionHandler('nexttrack', function() {
-      sendCommand('next');
+     sendCommand('next');
     });
 
     // Set metadata
@@ -394,4 +394,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Fetch the playlist when the page loads
   fetchSyncplayPlaylist();
+  setPreferredPlayer();
+
+  // Then initialize other components
+  initMediaSession();
+  updateInterval = setInterval(updateStatus, 2000);
+  updateStatus();
+  fetchSyncplayPlaylist();
 });
+
+
+
+
+function setPreferredPlayer() {
+  // Define media players in order of preference
+  const preferredPlayers = ['mpv', 'vlc', 'mplayer'];
+
+  // Get all available options
+  const options = Array.from(playerSelect.options).map(opt => opt.value.toLowerCase());
+
+  // Try to find the first preferred player that's available
+  for (const player of preferredPlayers) {
+    const matchingOption = options.findIndex(opt =>
+      opt === player || opt.includes(player)
+    );
+
+    if (matchingOption >= 0) {
+      playerSelect.selectedIndex = matchingOption;
+      return;
+    }
+  }
+
+  // If no preferred player is found, it will keep the default selection
+}
