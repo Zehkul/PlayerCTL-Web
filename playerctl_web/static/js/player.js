@@ -8,6 +8,7 @@ let isLocalStatusChange = false;
 let updateInterval;
 let serverPlaylist = [];
 let isSeekSliderBeingDragged = false;
+let isDragging = false;
 
 function getSelectedPlayer() {
     return playerSelect.value;
@@ -154,37 +155,57 @@ let playlistSortable;
 let currentItem = null;
 
 function fetchSyncplayPlaylist() {
-    Promise.all([
-        fetch("/api/syncplay_playlist").then((response) => response.json()),
-        fetch("/api/syncplay_current").then((response) => response.json()),
-    ])
-        .then(([playlistData, currentItemData]) => {
-                serverPlaylist = playlistData.playlist;
-                updatePlaylistDisplay(
-                    serverPlaylist,
-                    currentItemData.current_item,
-                );
-        })
-        .catch((error) => {
-            console.error("Error fetching Syncplay data:", error);
-            document.getElementById("playlistItems").innerHTML =
-                "<li>Error fetching playlist</li>";
-        });
+  if (isDragging) {
+    return; // Don't refresh the playlist while dragging
+  }
+
+  Promise.all([
+    fetch("/api/syncplay_playlist").then((response) => response.json()),
+    fetch("/api/syncplay_current").then((response) => response.json()),
+  ])
+    .then(([playlistData, currentItemData]) => {
+      serverPlaylist = playlistData.playlist;
+      updatePlaylistDisplay(
+        serverPlaylist,
+        currentItemData.current_item,
+      );
+    })
+    .catch((error) => {
+      console.error("Error fetching Syncplay data:", error);
+      document.getElementById("playlistItems").innerHTML = "<li>Error fetching playlist</li>";
+    });
 }
 
 function updatePlaylistDisplay(playlist, currentItem) {
-    const playlistElement = document.getElementById("playlistItems");
-    playlistElement.innerHTML = "";
-    playlist.forEach((item, index) => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        li.setAttribute("data-id", index);
-        if (item === currentItem) {
-            li.classList.add("current-item");
-        }
-        playlistElement.appendChild(li);
+  const playlistElement = document.getElementById("playlistItems");
+  playlistElement.innerHTML = "";
+  playlist.forEach((item, index) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    li.setAttribute("data-id", index);
+    if (item === currentItem) {
+      li.classList.add("current-item");
+    }
+
+    // Add double-tap functionality
+    let tapCount = 0;
+    let tapTimer;
+    li.addEventListener('click', function() {
+      tapCount++;
+      if (tapCount === 1) {
+        tapTimer = setTimeout(function() {
+          tapCount = 0;
+        }, 300);
+      } else if (tapCount === 2) {
+        clearTimeout(tapTimer);
+        tapCount = 0;
+        handleDoubleTap(index);
+      }
     });
-    initSortable();
+
+    playlistElement.appendChild(li);
+  });
+  initSortable();
 }
 
 function highlightCurrentItem() {
@@ -207,13 +228,16 @@ function initSortable() {
     {
       animation: 150,
       ghostClass: "sortable-ghost",
-      delay: 500, // 500ms delay before dragging starts
-      delayOnTouchOnly: true, // Only apply delay for touch devices
+      delay: 500,
+      delayOnTouchOnly: true,
+      onStart: function (evt) {
+        isDragging = true;
+      },
       onEnd: function (evt) {
-        // Send the updated playlist to the server immediately
+        isDragging = false;
         updateSyncplayPlaylist();
       },
-    },
+    }
   );
 }
 
@@ -279,10 +303,12 @@ function addLinkFromClipboard() {
     });
 }
 
-// Update playlist every 5 seconds if there are no unstaged changes
 setInterval(() => {
-        fetchSyncplayPlaylist();
+  if (!isDragging) {
+    fetchSyncplayPlaylist();
+  }
 }, 5000);
+
 
 // Update status every 2 seconds
 updateInterval = setInterval(updateStatus, 2000);
@@ -414,4 +440,21 @@ function setPreferredPlayer() {
   }
 
   // If no preferred player is found, it will keep the default selection
+}
+
+function handleDoubleTap(index) {
+  console.log(`Double-tapped item at index ${index}`);
+  fetch('/api/syncplay_set_index', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ index: index }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Playlist index changed:', data);
+    updatePlaylistDisplay(serverPlaylist, serverPlaylist[index]);
+  })
+  .catch(error => console.error('Error changing playlist index:', error));
 }
