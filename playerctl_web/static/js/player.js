@@ -202,21 +202,22 @@ function highlightCurrentItem() {
 }
 
 function initSortable() {
-    if (playlistSortable) {
-        playlistSortable.destroy();
-    }
-    playlistSortable = new Sortable(
-        document.getElementById("playlistItems"),
-        {
-            animation: 150,
-            ghostClass: "sortable-ghost",
-            onEnd: function (evt) {
-                hasUnstagedChanges = true;
-                document.getElementById("unstaged-changes").style.display =
-                    "block";
-            },
-        },
-    );
+  if (playlistSortable) {
+    playlistSortable.destroy();
+  }
+  playlistSortable = new Sortable(
+    document.getElementById("playlistItems"),
+    {
+      animation: 150,
+      ghostClass: "sortable-ghost",
+      delay: 500, // Add a 500ms delay before dragging starts
+      delayOnTouchOnly: true, // Only apply delay for touch devices
+      onEnd: function (evt) {
+        hasUnstagedChanges = true;
+        document.getElementById("unstaged-changes").style.display = "block";
+      },
+    },
+  );
 }
 
 function updateSyncplayPlaylist() {
