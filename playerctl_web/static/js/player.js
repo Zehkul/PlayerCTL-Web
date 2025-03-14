@@ -16,26 +16,26 @@ function getSelectedPlayer() {
 
 function sendCommand(command) {
     console.log(command)
-  const player = getSelectedPlayer();
-  fetch(`/api/${command}?player=${player}`)
-    .then((response) => response.json())
-    .then((data) => {
-      if (command === "status") {
-        document.getElementById("status").textContent =
-          `Status: ${data.result}`;
-      } else if (command === "play" || command === "play-pause") {
-          console.log("hit play")
-        if (isMediaSessionEnabled && silentAudio.paused) {
-          silentAudio.play().catch(e => console.error("Error playing:", e));
-        }
-      } else if (command === "pause") {
-          console.log("hit pause")
-        if (isMediaSessionEnabled && !silentAudio.paused) {
-          silentAudio.pause();
-        }
-      }
-    })
-    .catch((error) => console.error("Error:", error));
+    const player = getSelectedPlayer();
+    fetch(`/api/${command}?player=${player}`)
+        .then((response) => response.json())
+        .then((data) => {
+            if (command === "status") {
+                document.getElementById("status").textContent =
+                    `Status: ${data.result}`;
+            } else if (command === "play" || command === "play-pause") {
+                console.log("hit play")
+                if (isMediaSessionEnabled && silentAudio.paused) {
+                    silentAudio.play().catch(e => console.error("Error playing:", e));
+                }
+            } else if (command === "pause") {
+                console.log("hit pause")
+                if (isMediaSessionEnabled && !silentAudio.paused) {
+                    silentAudio.pause();
+                }
+            }
+        })
+        .catch((error) => console.error("Error:", error));
 }
 
 
@@ -105,37 +105,37 @@ seekSlider.addEventListener("touchend", () => {
 });
 
 function updateStatus() {
-  sendCommand("status");
-  updateMetadata();
-  updateVolume();
+    sendCommand("status");
+    updateMetadata();
+    updateVolume();
 
-  // Get current player status to sync with silent audio
-  const player = getSelectedPlayer();
-  fetch(`/api/status?player=${player}`)
-    .then((response) => response.json())
-    .then((data) => {
-      // Only update local audio state if the change wasn't initiated locally
-      if (!isLocalStatusChange) {
-        const newIsPlaying = data.result === "Playing";
+    // Get current player status to sync with silent audio
+    const player = getSelectedPlayer();
+    fetch(`/api/status?player=${player}`)
+        .then((response) => response.json())
+        .then((data) => {
+            // Only update local audio state if the change wasn't initiated locally
+            if (!isLocalStatusChange) {
+                const newIsPlaying = data.result === "Playing";
 
-        // Only update if state changed
-        if (newIsPlaying !== isServerPlaying) {
-          isServerPlaying = newIsPlaying;
+                // Only update if state changed
+                if (newIsPlaying !== isServerPlaying) {
+                    isServerPlaying = newIsPlaying;
 
-          if (isMediaSessionEnabled) {
-            if (isServerPlaying && silentAudio.paused) {
-              silentAudio.play().catch(e => console.error("Error playing:", e));
-            } else if (!isServerPlaying && !silentAudio.paused) {
-              silentAudio.pause();
+                    if (isMediaSessionEnabled) {
+                        if (isServerPlaying && silentAudio.paused) {
+                            silentAudio.play().catch(e => console.error("Error playing:", e));
+                        } else if (!isServerPlaying && !silentAudio.paused) {
+                            silentAudio.pause();
+                        }
+                    }
+                }
+            } else {
+                // Reset the local change flag
+                isLocalStatusChange = false;
             }
-          }
-        }
-      } else {
-        // Reset the local change flag
-        isLocalStatusChange = false;
-      }
-    })
-    .catch((error) => console.error("Error:", error));
+        })
+        .catch((error) => console.error("Error:", error));
 }
 
 
@@ -155,57 +155,57 @@ let playlistSortable;
 let currentItem = null;
 
 function fetchSyncplayPlaylist() {
-  if (isDragging) {
-    return; // Don't refresh the playlist while dragging
-  }
+    if (isDragging) {
+        return; // Don't refresh the playlist while dragging
+    }
 
-  Promise.all([
-    fetch("/api/syncplay_playlist").then((response) => response.json()),
-    fetch("/api/syncplay_current").then((response) => response.json()),
-  ])
-    .then(([playlistData, currentItemData]) => {
-      serverPlaylist = playlistData.playlist;
-      updatePlaylistDisplay(
-        serverPlaylist,
-        currentItemData.current_item,
-      );
-    })
-    .catch((error) => {
-      console.error("Error fetching Syncplay data:", error);
-      document.getElementById("playlistItems").innerHTML = "<li>Error fetching playlist</li>";
-    });
+    Promise.all([
+        fetch("/api/syncplay_playlist").then((response) => response.json()),
+        fetch("/api/syncplay_current").then((response) => response.json()),
+    ])
+        .then(([playlistData, currentItemData]) => {
+            serverPlaylist = playlistData.playlist;
+            updatePlaylistDisplay(
+                serverPlaylist,
+                currentItemData.current_item,
+            );
+        })
+        .catch((error) => {
+            console.error("Error fetching Syncplay data:", error);
+            document.getElementById("playlistItems").innerHTML = "<li>Error fetching playlist</li>";
+        });
 }
 
 function updatePlaylistDisplay(playlist, currentItem) {
-  const playlistElement = document.getElementById("playlistItems");
-  playlistElement.innerHTML = "";
-  playlist.forEach((item, index) => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    li.setAttribute("data-id", index);
-    if (item === currentItem) {
-      li.classList.add("current-item");
-    }
+    const playlistElement = document.getElementById("playlistItems");
+    playlistElement.innerHTML = "";
+    playlist.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        li.setAttribute("data-id", index);
+        if (item === currentItem) {
+            li.classList.add("current-item");
+        }
 
-    // Add double-tap functionality
-    let tapCount = 0;
-    let tapTimer;
-    li.addEventListener('click', function() {
-      tapCount++;
-      if (tapCount === 1) {
-        tapTimer = setTimeout(function() {
-          tapCount = 0;
-        }, 300);
-      } else if (tapCount === 2) {
-        clearTimeout(tapTimer);
-        tapCount = 0;
-        handleDoubleTap(index);
-      }
+        // Add double-tap functionality
+        let tapCount = 0;
+        let tapTimer;
+        li.addEventListener('click', function() {
+            tapCount++;
+            if (tapCount === 1) {
+                tapTimer = setTimeout(function() {
+                    tapCount = 0;
+                }, 300);
+            } else if (tapCount === 2) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                handleDoubleTap(index);
+            }
+        });
+
+        playlistElement.appendChild(li);
     });
-
-    playlistElement.appendChild(li);
-  });
-  initSortable();
+    initSortable();
 }
 
 function highlightCurrentItem() {
@@ -220,93 +220,93 @@ function highlightCurrentItem() {
 }
 
 function initSortable() {
-  if (playlistSortable) {
-    playlistSortable.destroy();
-  }
-  playlistSortable = new Sortable(
-    document.getElementById("playlistItems"),
-    {
-      animation: 150,
-      ghostClass: "sortable-ghost",
-      delay: 500,
-      delayOnTouchOnly: true,
-      onStart: function (evt) {
-        isDragging = true;
-      },
-      onEnd: function (evt) {
-        isDragging = false;
-        updateSyncplayPlaylist();
-      },
+    if (playlistSortable) {
+        playlistSortable.destroy();
     }
-  );
+    playlistSortable = new Sortable(
+        document.getElementById("playlistItems"),
+        {
+            animation: 150,
+            ghostClass: "sortable-ghost",
+            delay: 500,
+            delayOnTouchOnly: true,
+            onStart: function (evt) {
+                isDragging = true;
+            },
+            onEnd: function (evt) {
+                isDragging = false;
+                updateSyncplayPlaylist();
+            },
+        }
+    );
 }
 
 function updateSyncplayPlaylist() {
-  const playlistItems = Array.from(
-    document.getElementById("playlistItems").children,
-  );
-  const newOrder = playlistItems.map((item) => item.textContent);
+    const playlistItems = Array.from(
+        document.getElementById("playlistItems").children,
+    );
+    const newOrder = playlistItems.map((item) => item.textContent);
 
-  fetch("/api/syncplay_playlist", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ playlist: newOrder }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log("Playlist updated:", data);
-      serverPlaylist = newOrder;
+    fetch("/api/syncplay_playlist", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ playlist: newOrder }),
     })
-    .catch((error) => {
-      console.error("Error updating playlist:", error);
-    });
+        .then((response) => response.json())
+        .then((data) => {
+            console.log("Playlist updated:", data);
+            serverPlaylist = newOrder;
+        })
+        .catch((error) => {
+            console.error("Error updating playlist:", error);
+        });
 }
 
 function addLinkFromClipboard() {
-  if (!navigator.clipboard) {
-      var text = prompt('paste link please');
-      if (text.trim()) {
-        const playlistElement = document.getElementById("playlistItems");
-        const li = document.createElement("li");
-        li.textContent = text.trim();
-        li.setAttribute("data-id", playlistElement.children.length);
-        playlistElement.appendChild(li);
-        initSortable();
-        updateSyncplayPlaylist(); // Send update immediately
-      } else {
-        alert("Clipboard is empty or contains only whitespace.");
-      }
-      return;
-  }
-  navigator.clipboard
-    .readText()
-    .then((text) => {
-      if (text.trim()) {
-        const playlistElement = document.getElementById("playlistItems");
-        const li = document.createElement("li");
-        li.textContent = text.trim();
-        li.setAttribute("data-id", playlistElement.children.length);
-        playlistElement.appendChild(li);
-        initSortable();
-        updateSyncplayPlaylist(); // Send update immediately
-      } else {
-        alert("Clipboard is empty or contains only whitespace.");
-      }
-    })
-    .catch((err) => {
-      console.error("Failed to read clipboard contents: ", err);
-      alert(
-        "Failed to read clipboard contents. Please check your browser permissions.",
-      );
-    });
+    if (!navigator.clipboard) {
+        var text = prompt('paste link please');
+        if (text.trim()) {
+            const playlistElement = document.getElementById("playlistItems");
+            const li = document.createElement("li");
+            li.textContent = text.trim();
+            li.setAttribute("data-id", playlistElement.children.length);
+            playlistElement.appendChild(li);
+            initSortable();
+            updateSyncplayPlaylist(); // Send update immediately
+        } else {
+            alert("Clipboard is empty or contains only whitespace.");
+        }
+        return;
+    }
+    navigator.clipboard
+        .readText()
+        .then((text) => {
+            if (text.trim()) {
+                const playlistElement = document.getElementById("playlistItems");
+                const li = document.createElement("li");
+                li.textContent = text.trim();
+                li.setAttribute("data-id", playlistElement.children.length);
+                playlistElement.appendChild(li);
+                initSortable();
+                updateSyncplayPlaylist(); // Send update immediately
+            } else {
+                alert("Clipboard is empty or contains only whitespace.");
+            }
+        })
+        .catch((err) => {
+            console.error("Failed to read clipboard contents: ", err);
+            alert(
+                "Failed to read clipboard contents. Please check your browser permissions.",
+            );
+        });
 }
 
 setInterval(() => {
-  if (!isDragging) {
-    fetchSyncplayPlaylist();
-  }
+    if (!isDragging) {
+        fetchSyncplayPlaylist();
+    }
 }, 5000);
 
 
@@ -319,142 +319,145 @@ fetchSyncplayPlaylist();
 
 // Add these event listeners to update playbackState
 silentAudio.addEventListener('play', function() {
-  navigator.mediaSession.playbackState = 'playing';
+    navigator.mediaSession.playbackState = 'playing';
 });
 
 silentAudio.addEventListener('pause', function() {
-  navigator.mediaSession.playbackState = 'paused';
+    navigator.mediaSession.playbackState = 'paused';
 });
 
 // Initialize media session
 function initMediaSession() {
-  // Set up silent audio for mobile media controls
-  silentAudio.volume = 0.001; // Nearly silent but not completely
+    // Set up silent audio for mobile media controls
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    silentAudio.src ='audio/silent.mp3'
+    silentAudio.src = isFirefox ? '/static/audio/quiet_tone.mp3' : '/static/audio/silent.mp3';
 
-  // Try to play on page load (may be blocked by browser)
-  silentAudio.play()
-    .then(() => {
-      isMediaSessionEnabled = true;
-      document.getElementById("interaction-warning").style.display = "none";
-      setupMediaSessionHandlers();
-    })
-    .catch(error => {
-      console.log("Autoplay prevented. User interaction required.");
-      document.getElementById("interaction-warning").style.display = "block";
-
-      // Add event listener for first user interaction
-      document.addEventListener('click', function tryPlayOnInteraction() {
-        silentAudio.play()
-          .then(() => {
+    silentAudio.volume = 0.001; // Nearly silent but not completely
+    // Try to play on page load (may be blocked by browser)
+    silentAudio.play()
+        .then(() => {
             isMediaSessionEnabled = true;
             document.getElementById("interaction-warning").style.display = "none";
             setupMediaSessionHandlers();
-            document.removeEventListener('click', tryPlayOnInteraction);
-          })
-          .catch(e => console.error("Still failed after interaction:", e));
-      }, { once: true });
-    });
+        })
+        .catch(error => {
+            console.log("Autoplay prevented. User interaction required.");
+            document.getElementById("interaction-warning").style.display = "block";
+
+            // Add event listener for first user interaction
+            document.addEventListener('click', function tryPlayOnInteraction() {
+                silentAudio.play()
+                    .then(() => {
+                        isMediaSessionEnabled = true;
+                        document.getElementById("interaction-warning").style.display = "none";
+                        setupMediaSessionHandlers();
+                        document.removeEventListener('click', tryPlayOnInteraction);
+                    })
+                    .catch(e => console.error("Still failed after interaction:", e));
+            }, { once: true });
+        });
 }
 
 function setupMediaSessionHandlers() {
-  if ('mediaSession' in navigator) {
-    // Play handler with async/await
-    navigator.mediaSession.setActionHandler('play', async function() {
-      console.log("media-play was hit!");
-      isLocalStatusChange = true;
-      try {
-        await silentAudio.play();
-        navigator.mediaSession.playbackState = 'playing';
-        sendCommand('play-pause');
-      } catch (error) {
-        console.error("Play failed:", error);
-      }
-    });
+    if ('mediaSession' in navigator) {
+        // Play handler with async/await
+        navigator.mediaSession.setActionHandler('play', async function() {
+            console.log("media-play was hit!");
+            isLocalStatusChange = true;
+            try {
+                await silentAudio.play();
+                navigator.mediaSession.playbackState = 'playing';
+                sendCommand('play-pause');
+            } catch (error) {
+                console.error("Play failed:", error);
+            }
+        });
 
-    // Pause handler
-    navigator.mediaSession.setActionHandler('pause', function() {
-      console.log("media-pause was hit!");
-      isLocalStatusChange = true;
-      silentAudio.pause();
-      navigator.mediaSession.playbackState = 'paused';
-      sendCommand('play-pause');
-    });
+        // Pause handler
+        navigator.mediaSession.setActionHandler('pause', function() {
+            console.log("media-pause was hit!");
+            isLocalStatusChange = true;
+            silentAudio.pause();
+            navigator.mediaSession.playbackState = 'paused';
+            sendCommand('play-pause');
+        });
 
-    // Previous/Next track
-    navigator.mediaSession.setActionHandler('previoustrack', function() {
-      sendCommand('previous');
-    });
+        // Previous/Next track
+        navigator.mediaSession.setActionHandler('previoustrack', function() {
+            sendCommand('previous');
+        });
 
-    navigator.mediaSession.setActionHandler('nexttrack', function() {
-     sendCommand('next');
-    });
+        navigator.mediaSession.setActionHandler('nexttrack', function() {
+            sendCommand('next');
+        });
 
-    // Set metadata
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: 'PlayerCTL',
-      artist: 'Web Interface'
-    });
-  }
+        // Set metadata
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'PlayerCTL',
+            artist: 'Web Interface'
+        });
+    }
 }
 
 // Add this to your document.addEventListener('DOMContentLoaded', function() {...}) block
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize media session
-  initMediaSession();
+    // Initialize media session
+    initMediaSession();
 
-  // Update status every 2 seconds
-  updateInterval = setInterval(updateStatus, 2000);
-  updateStatus(); // Initial update
+    // Update status every 2 seconds
+    updateInterval = setInterval(updateStatus, 2000);
+    updateStatus(); // Initial update
 
-  // Fetch the playlist when the page loads
-  fetchSyncplayPlaylist();
-  setPreferredPlayer();
+    // Fetch the playlist when the page loads
+    fetchSyncplayPlaylist();
+    setPreferredPlayer();
 
-  // Then initialize other components
-  initMediaSession();
-  updateInterval = setInterval(updateStatus, 2000);
-  updateStatus();
-  fetchSyncplayPlaylist();
+    // Then initialize other components
+    initMediaSession();
+    updateInterval = setInterval(updateStatus, 2000);
+    updateStatus();
+    fetchSyncplayPlaylist();
 });
 
 
 
 
 function setPreferredPlayer() {
-  // Define media players in order of preference
-  const preferredPlayers = ['mpv', 'vlc', 'mplayer'];
+    // Define media players in order of preference
+    const preferredPlayers = ['mpv', 'vlc', 'mplayer'];
 
-  // Get all available options
-  const options = Array.from(playerSelect.options).map(opt => opt.value.toLowerCase());
+    // Get all available options
+    const options = Array.from(playerSelect.options).map(opt => opt.value.toLowerCase());
 
-  // Try to find the first preferred player that's available
-  for (const player of preferredPlayers) {
-    const matchingOption = options.findIndex(opt =>
-      opt === player || opt.includes(player)
-    );
+    // Try to find the first preferred player that's available
+    for (const player of preferredPlayers) {
+        const matchingOption = options.findIndex(opt =>
+            opt === player || opt.includes(player)
+        );
 
-    if (matchingOption >= 0) {
-      playerSelect.selectedIndex = matchingOption;
-      return;
+        if (matchingOption >= 0) {
+            playerSelect.selectedIndex = matchingOption;
+            return;
+        }
     }
-  }
 
-  // If no preferred player is found, it will keep the default selection
+    // If no preferred player is found, it will keep the default selection
 }
 
 function handleDoubleTap(index) {
-  console.log(`Double-tapped item at index ${index}`);
-  fetch('/api/syncplay_set_index', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ index: index }),
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Playlist index changed:', data);
-    updatePlaylistDisplay(serverPlaylist, serverPlaylist[index]);
-  })
-  .catch(error => console.error('Error changing playlist index:', error));
+    console.log(`Double-tapped item at index ${index}`);
+    fetch('/api/syncplay_set_index', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ index: index }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Playlist index changed:', data);
+            updatePlaylistDisplay(serverPlaylist, serverPlaylist[index]);
+        })
+        .catch(error => console.error('Error changing playlist index:', error));
 }
