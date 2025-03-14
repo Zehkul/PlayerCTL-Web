@@ -1,0 +1,63 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+.container {
+    text-align: center;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 500px;
+}
+button {
+    margin: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+}
+#status,
+#metadata {
+    margin-top: 1rem;
+}
+.slider-container {
+    margin-top: 1rem;
+}
+input[type="range"] {
+    width: 100%;
+}
+.seek-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+#playerSelect {
+    margin-bottom: 1rem;
+}
+#playlistItems li {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    touch-action: none; /* Prevents scrolling while dragging on touch devices */
+    text-align: left; /* Align text to the left */
+    word-break: break-all; /* Break words at any point */
+    overflow-wrap: break-word; /* Alternative to word-break for better readability */
+}
+.sortable-ghost {
+    opacity: 0.5;
+}
+#unstaged-changes {
+    color: red;
+    font-weight: bold;
+    display: none;
+}
+.current-item {
+    background-color: lightblue !important;
+}
