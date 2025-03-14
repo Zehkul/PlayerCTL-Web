@@ -303,125 +303,16 @@ updateStatus(); // Initial update
 fetchSyncplayPlaylist();
 
 
-
-// Initialize the media session with an initial playback state
-navigator.mediaSession.playbackState = "paused";
-
-// Define action handlers for system media controls
-navigator.mediaSession.setActionHandler("play", () => {
-  console.log('a');
-  sendRemoteCommand("play");                  // Trigger remote play
-  navigator.mediaSession.playbackState = "playing";  // Update state
+// Add these event listeners to update playbackState
+silentAudio.addEventListener('play', function() {
+  navigator.mediaSession.playbackState = 'playing';
 });
 
-navigator.mediaSession.setActionHandler("pause", () => {
-  console.log('b');
-  sendRemoteCommand("pause");                 // Trigger remote pause
-  navigator.mediaSession.playbackState = "paused";   // Update state
+silentAudio.addEventListener('pause', function() {
+  navigator.mediaSession.playbackState = 'paused';
 });
 
-// Function to update media metadata
-function updateMediaMetadata(title, artist, album, artwork) {
-  console.log('c');
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: title,          // e.g., "Song Title"
-    artist: artist,        // e.g., "Artist Name"
-    album: album,          // e.g., "Album Name"
-    artwork: [
-      { src: artwork, sizes: "512x512", type: "image/png" }  // URL to artwork
-    ]
-  });
-}
-
-// Example: Set initial metadata
-updateMediaMetadata("Song Title", "Artist Name", "Album Name", "https://t4.ftcdn.net/jpg/03/86/32/39/360_F_386323925_zrx6Y3SM4QdkM2ICGpbs9RbEVJFRxIGm.jpg");
-
-if ('mediaSession' in navigator) {
-  console.log('Media Session API is supported');
-} else {
-  console.log('Media Session API is not supported');
-}
-
-try {
-  navigator.mediaSession.setActionHandler("play", () => {
-    console.log('a');
-    sendRemoteCommand("play");
-    navigator.mediaSession.playbackState = "playing";
-  });
-  navigator.mediaSession.setActionHandler("pause", () => {
-    console.log('b');
-    sendRemoteCommand("pause");
-    navigator.mediaSession.playbackState = "paused";
-  });
-  navigator.mediaSession.playbackState = "playing";
-  console.log('Action handlers and state set');
-} catch (error) {
-  console.error('Error setting up media session:', error);
-}
-
-
-function sendRemoteCommand(command, data = null) {
-  // Replace this with your existing remote control logic
-  console.log(`Command sent: ${command}`, data);
-  // Example: fetch('/control', { method: 'POST', body: JSON.stringify({ command, data }) });
-}
-
-// Initialize the media session with an initial playback state
-navigator.mediaSession.playbackState = "paused";
-
-// Define action handlers for system media controls
-navigator.mediaSession.setActionHandler("play", () => {
-  console.log('a');
-  sendRemoteCommand("play");                  // Trigger remote play
-  navigator.mediaSession.playbackState = "playing";  // Update state
-});
-
-navigator.mediaSession.setActionHandler("pause", () => {
-  console.log('b');
-  sendRemoteCommand("pause");                 // Trigger remote pause
-  navigator.mediaSession.playbackState = "paused";   // Update state
-});
-
-// Function to update media metadata
-function updateMediaMetadata(title, artist, album, artwork) {
-  console.log('c');
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: title,          // e.g., "Song Title"
-    artist: artist,        // e.g., "Artist Name"
-    album: album,          // e.g., "Album Name"
-    artwork: [
-      { src: artwork, sizes: "512x512", type: "image/png" }  // URL to artwork
-    ]
-  });
-}
-
-// Example: Set initial metadata
-updateMediaMetadata("Song Title", "Artist Name", "Album Name", "https://t4.ftcdn.net/jpg/03/86/32/39/360_F_386323925_zrx6Y3SM4QdkM2ICGpbs9RbEVJFRxIGm.jpg");
-
-if ('mediaSession' in navigator) {
-  console.log('Media Session API is supported');
-} else {
-  console.log('Media Session API is not supported');
-}
-
-try {
-  navigator.mediaSession.setActionHandler("play", () => {
-    console.log('a');
-    sendRemoteCommand("play");
-    navigator.mediaSession.playbackState = "playing";
-  });
-  navigator.mediaSession.setActionHandler("pause", () => {
-    console.log('b');
-    sendRemoteCommand("pause");
-    navigator.mediaSession.playbackState = "paused";
-  });
-  navigator.mediaSession.playbackState = "playing";
-  console.log('Action handlers and state set');
-} catch (error) {
-  console.error('Error setting up media session:', error);
-}
-
-
+// Initialize media session
 function initMediaSession() {
   // Set up silent audio for mobile media controls
   silentAudio.volume = 0.001; // Nearly silent but not completely
@@ -453,22 +344,29 @@ function initMediaSession() {
 
 function setupMediaSessionHandlers() {
   if ('mediaSession' in navigator) {
-    // Play/Pause
-    navigator.mediaSession.setActionHandler('play', function() {
-        console.log("media-play was hit!")
+    // Play handler with async/await
+    navigator.mediaSession.setActionHandler('play', async function() {
+      console.log("media-play was hit!");
       isLocalStatusChange = true;
-      sendCommand('play');
-      silentAudio.play();
+      try {
+        await silentAudio.play();
+        navigator.mediaSession.playbackState = 'playing';
+        sendCommand('play-pause');
+      } catch (error) {
+        console.error("Play failed:", error);
+      }
     });
 
+    // Pause handler
     navigator.mediaSession.setActionHandler('pause', function() {
-        console.log("media-pause was hit!")
+      console.log("media-pause was hit!");
       isLocalStatusChange = true;
-      sendCommand('pause');
       silentAudio.pause();
+      navigator.mediaSession.playbackState = 'paused';
+      sendCommand('play-pause');
     });
 
-    // Previous/Next
+    // Previous/Next track
     navigator.mediaSession.setActionHandler('previoustrack', function() {
       sendCommand('previous');
     });
@@ -477,28 +375,15 @@ function setupMediaSessionHandlers() {
       sendCommand('next');
     });
 
-    // Update metadata
+    // Set metadata
     navigator.mediaSession.metadata = new MediaMetadata({
       title: 'PlayerCTL',
-      artist: 'Web Interface',
-      artwork: [
-        { src: '/static/favicon.ico', sizes: '64x64', type: 'image/x-icon' }
-      ]
+      artist: 'Web Interface'
     });
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize media session
-  initMediaSession();
-
-  // Update status every 2 seconds
-  updateInterval = setInterval(updateStatus, 2000);
-  updateStatus(); // Initial update
-
-  // Fetch the playlist when the page loads
-  fetchSyncplayPlaylist();
-});
+// Add this to your document.addEventListener('DOMContentLoaded', function() {...}) block
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize media session
   initMediaSession();
