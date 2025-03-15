@@ -320,16 +320,6 @@ updateStatus(); // Initial update
 // Fetch the playlist when the page loads
 fetchSyncplayPlaylist();
 
-
-// Add these event listeners to update playbackState
-silentAudio.addEventListener('play', function() {
-    navigator.mediaSession.playbackState = 'playing';
-});
-
-silentAudio.addEventListener('pause', function() {
-    navigator.mediaSession.playbackState = 'paused';
-});
-
 // Initialize media session
 function initMediaSession() {
     // Set up silent audio for mobile media controls
@@ -372,6 +362,7 @@ function setupMediaSessionHandlers() {
             try {
                 await silentAudio.play();
                 navigator.mediaSession.playbackState = 'playing';
+                console.log("mediaSession playbackState changed: Now playing (1)")
                 sendCommand('play-pause');
             } catch (error) {
                 console.error("Play failed:", error);
@@ -384,6 +375,7 @@ function setupMediaSessionHandlers() {
             isLocalStatusChange = true;
             silentAudio.pause();
             navigator.mediaSession.playbackState = 'paused';
+            console.log("mediaSession playbackState changed: Now paused (2)")
             sendCommand('play-pause');
         });
 
