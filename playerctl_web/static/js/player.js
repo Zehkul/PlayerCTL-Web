@@ -38,24 +38,36 @@ function sendCommand(command) {
         .catch((error) => console.error("Error:", error));
 }
 
-
 function updateMetadata() {
-    const player = getSelectedPlayer();
-    fetch(`/api/metadata?player=${player}`)
-        .then((response) => response.json())
-        .then((data) => {
-            document.getElementById("metadata").textContent =
-                `Now Playing: ${data.title} by ${data.artist}`;
-            if(data.thumbnail && document.getElementById("thumb").src != data.thumbnail) {
-                document.getElementById("thumb").src = data.thumbnail;
-            }
-            document.getElementById("thumb").style.display = data.thumbnail ? "inline-block" : "none";
-            seekSlider.max = data.length;
-            if (!isSeekSliderBeingDragged) {
-                seekSlider.value = data.position;
-            }
-        })
-        .catch((error) => console.error("Error:", error));
+  const player = getSelectedPlayer();
+  fetch(`/api/metadata?player=${player}`)
+    .then((response) => response.json())
+    .then((data) => {
+      document.getElementById("metadata").textContent =
+        `Now Playing: ${data.title} by ${data.artist}`;
+
+      if(data.thumbnail && document.getElementById("thumb").src !== data.thumbnail) {
+        document.getElementById("thumb").src = data.thumbnail;
+      }
+      document.getElementById("thumb").style.display = data.thumbnail ? "inline-block" : "none";
+
+      seekSlider.max = data.length;
+      if (!isSeekSliderBeingDragged) {
+        seekSlider.value = data.position;
+      }
+
+      // Update Media Session metadata including thumbnail as artwork
+      if ('mediaSession' in navigator && isMediaSessionEnabled) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: data.title || 'Unknown Title',
+          artist: data.artist || 'Unknown Artist',
+          artwork: [
+            { src: data.thumbnail, sizes: '512x512', type: 'image/webp' }
+          ]
+        });
+      }
+    })
+    .catch((error) => console.error("Error:", error));
 }
 
 function setVolume(volume) {
@@ -363,7 +375,7 @@ function setupMediaSessionHandlers() {
                 await silentAudio.play();
                 navigator.mediaSession.playbackState = 'playing';
                 console.log("mediaSession playbackState changed: Now playing (1)")
-                sendCommand('play-pause');
+                sendCommand('play');
             } catch (error) {
                 console.error("Play failed:", error);
             }
@@ -376,7 +388,7 @@ function setupMediaSessionHandlers() {
             silentAudio.pause();
             navigator.mediaSession.playbackState = 'paused';
             console.log("mediaSession playbackState changed: Now paused (2)")
-            sendCommand('play-pause');
+            sendCommand('pause');
         });
 
         // Previous/Next track
