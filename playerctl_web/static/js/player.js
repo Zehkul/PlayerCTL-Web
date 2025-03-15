@@ -15,27 +15,62 @@ function getSelectedPlayer() {
 }
 
 function sendCommand(command) {
-    console.log(command)
-    const player = getSelectedPlayer();
-    fetch(`/api/${command}?player=${player}`)
-        .then((response) => response.json())
-        .then((data) => {
-            if (command === "status") {
-                document.getElementById("status").textContent =
-                    `Status: ${data.result}`;
-            } else if (command === "play" || command === "play-pause") {
-                console.log("hit play")
-                if (isMediaSessionEnabled && silentAudio.paused) {
-                    silentAudio.play().catch(e => console.error("Error playing:", e));
-                }
-            } else if (command === "pause") {
-                console.log("hit pause")
-                if (isMediaSessionEnabled && !silentAudio.paused) {
-                    silentAudio.pause();
-                }
-            }
+  const player = getSelectedPlayer();
+
+  // Check if this is likely a Syncplay player (just 'mpv' without instance suffix)
+  // and if we're trying to navigate with next/previous
+  if ((command === "next" || command === "previous") && player === "mpv") {
+    // Use Syncplay playlist instead
+    if (serverPlaylist && serverPlaylist.length > 1) {
+      // Find current item index in the playlist
+      let currentIndex = -1;
+      const playlistItems = document.querySelectorAll("#playlistItems li");
+      playlistItems.forEach((item, index) => {
+        if (item.classList.contains("current-item")) {
+          currentIndex = index;
+        }
+      });
+
+      if (currentIndex !== -1) {
+        // Calculate the new index based on the command
+        const newIndex = command === "next"
+          ? (currentIndex + 1) % serverPlaylist.length
+          : (currentIndex - 1 + serverPlaylist.length) % serverPlaylist.length;
+
+        // Set the new index in Syncplay
+        fetch('/api/syncplay_set_index', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ index: newIndex }),
         })
-        .catch((error) => console.error("Error:", error));
+        .then(response => response.json())
+        .then(data => console.log("Syncplay index changed:", data))
+        .catch(error => console.error("Error changing Syncplay index:", error));
+
+        return;
+      }
+    }
+  }
+
+  // Normal command handling for other players or commands
+  fetch(`/api/${command}?player=${player}`)
+    .then((response) => response.json())
+    .then((data) => {
+      if (command === "status") {
+        document.getElementById("status").textContent = `Status: ${data.result}`;
+      } else if (command === "play" || command === "play-pause") {
+        if (isMediaSessionEnabled && silentAudio.paused) {
+          silentAudio.play().catch(e => console.error("Error playing:", e));
+        }
+      } else if (command === "pause") {
+        if (isMediaSessionEnabled && !silentAudio.paused) {
+          silentAudio.pause();
+        }
+      }
+    })
+    .catch((error) => console.error("Error:", error));
 }
 
 function updateMetadata() {
@@ -218,17 +253,6 @@ function updatePlaylistDisplay(playlist, currentItem) {
         playlistElement.appendChild(li);
     });
     initSortable();
-}
-
-function highlightCurrentItem() {
-    const playlistItems = document.querySelectorAll("#playlistItems li");
-    playlistItems.forEach((item) => {
-        if (item.textContent === currentItem) {
-            item.style.backgroundColor = "lightblue";
-        } else {
-            item.style.backgroundColor = "";
-        }
-    });
 }
 
 function initSortable() {
