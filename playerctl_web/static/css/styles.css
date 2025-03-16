@@ -19,25 +19,6 @@ body {
     transition: all 0.3s ease;
 }
 
-h1 {
-    color: #3a4f66;
-    margin-bottom: 1.5rem;
-    font-weight: 700;
-    position: relative;
-    display: inline-block;
-}
-
-h1::after {
-    content: '';
-    position: absolute;
-    width: 50%;
-    height: 3px;
-    background: linear-gradient(90deg, #4a90e2, #67b8e3);
-    bottom: -8px;
-    left: 25%;
-    border-radius: 2px;
-}
-
 button {
     background: linear-gradient(135deg, #4a90e2 0%, #67b8e3 100%);
     color: white;
