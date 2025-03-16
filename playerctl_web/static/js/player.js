@@ -504,3 +504,25 @@ function handleDoubleTap(index) {
         })
         .catch(error => console.error('Error changing playlist index:', error));
 }
+
+document.getElementById("darkModeToggle").addEventListener("click", function() {
+  document.body.classList.toggle("dark-mode");
+});
+
+// Add this function to your existing JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if user prefers dark mode
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.body.classList.add('dark-mode');
+  }
+
+  // Listen for changes in system preference
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    if (event.matches) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  });
+});
+
