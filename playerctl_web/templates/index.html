@@ -17,13 +17,13 @@
                 <option value="{{ player }}">{{ player }}</option>
                 {% endfor %}
             </select>
+            <img id="thumb" style="display:none;" />
             <div>
                 <button onclick="sendCommand('previous')">Previous</button>
                 <button onclick="sendCommand('play-pause')">Play/Pause</button>
                 <button onclick="sendCommand('next')">Next</button>
             </div>
             <div id="status"></div>
-            <img id="thumb" style="display:none;" />
             <div id="metadata"></div>
             <div class="slider-container">
                 <label for="volumeSlider">Volume:</label>
@@ -49,7 +49,7 @@
             <div id="syncplayPlaylist">
                 <h3>Syncplay Playlist</h3>
                 <button onclick="addLinkFromClipboard()">
-                    Add Link from Clipboard
+                    Add Link
                 </button>
                 <ul id="playlistItems"></ul>
             </div>
