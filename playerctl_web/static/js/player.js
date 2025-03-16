@@ -85,7 +85,7 @@ function updateMetadata() {
     .then((response) => response.json())
     .then((data) => {
       document.getElementById("metadata").textContent =
-        `Now Playing: ${data.title} by ${data.artist}`;
+        `${data.title} by ${data.artist}`;
 
       if(data.thumbnail && document.getElementById("thumb").src !== data.thumbnail) {
         document.getElementById("thumb").src = data.thumbnail;
@@ -168,10 +168,6 @@ function updateStatus() {
   fetch(`/api/status?player=${player}`)
     .then((response) => response.json())
     .then((data) => {
-      // Remove the status text display
-      // document.getElementById("status").textContent = `Status: ${data.result}`;
-
-      // Update playing indicator
       const playingIndicator = document.querySelector('img#thumb');
       if (data.result === "Playing") {
         playingIndicator.classList.add("playing");
