@@ -16,7 +16,9 @@
                 <option value="{{ player }}">{{ player }}</option>
                 {% endfor %}
             </select>
-            <img id="thumb" style="display:none;" />
+            <div class="thumb-container">
+                <img id="thumb" style="display: none;">
+            </div>
             <div>
                 <button onclick="sendCommand('previous')">Previous</button>
                 <button onclick="sendCommand('play-pause')">Play/Pause</button>

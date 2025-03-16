@@ -198,3 +198,24 @@ input[type="range"]::-webkit-slider-thumb {
 #seekSlider {
   flex-grow: 1;
 }
+
+img#thumb.playing {
+  border: 3px solid #4a90e2;
+  border-radius: 12px;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  animation: pulse 2s infinite;
+  z-index: 1;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(74, 144, 226, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0);
+  }
+}

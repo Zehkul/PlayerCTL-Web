@@ -160,39 +160,46 @@ seekSlider.addEventListener("touchend", () => {
 });
 
 function updateStatus() {
-    sendCommand("status");
-    updateMetadata();
-    updateVolume();
+  updateMetadata();
+  updateVolume();
 
-    // Get current player status to sync with silent audio
-    const player = getSelectedPlayer();
-    fetch(`/api/status?player=${player}`)
-        .then((response) => response.json())
-        .then((data) => {
-            // Only update local audio state if the change wasn't initiated locally
-            if (!isLocalStatusChange) {
-                const newIsPlaying = data.result === "Playing";
+  // Get current player status to sync with silent audio
+  const player = getSelectedPlayer();
+  fetch(`/api/status?player=${player}`)
+    .then((response) => response.json())
+    .then((data) => {
+      // Remove the status text display
+      // document.getElementById("status").textContent = `Status: ${data.result}`;
 
-                // Only update if state changed
-                if (newIsPlaying !== isServerPlaying) {
-                    isServerPlaying = newIsPlaying;
+      // Update playing indicator
+      const playingIndicator = document.querySelector('img#thumb');
+      if (data.result === "Playing") {
+        playingIndicator.classList.add("playing");
+      } else {
+        playingIndicator.classList.remove("playing");
+      }
 
-                    if (isMediaSessionEnabled) {
-                        if (isServerPlaying && silentAudio.paused) {
-                            silentAudio.play().catch(e => console.error("Error playing:", e));
-                        } else if (!isServerPlaying && !silentAudio.paused) {
-                            silentAudio.pause();
-                        }
-                    }
-                }
-            } else {
-                // Reset the local change flag
-                isLocalStatusChange = false;
+      // Only update local audio state if the change wasn't initiated locally
+      if (!isLocalStatusChange) {
+        const newIsPlaying = data.result === "Playing";
+        // Only update if state changed
+        if (newIsPlaying !== isServerPlaying) {
+          isServerPlaying = newIsPlaying;
+          if (isMediaSessionEnabled) {
+            if (isServerPlaying && silentAudio.paused) {
+              silentAudio.play().catch(e => console.error("Error playing:", e));
+            } else if (!isServerPlaying && !silentAudio.paused) {
+              silentAudio.pause();
             }
-        })
-        .catch((error) => console.error("Error:", error));
+          }
+        }
+      } else {
+        // Reset the local change flag
+        isLocalStatusChange = false;
+      }
+    })
+    .catch((error) => console.error("Error:", error));
 }
-
 
 function updateVolume() {
     const player = getSelectedPlayer();
