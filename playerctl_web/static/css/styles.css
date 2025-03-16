@@ -191,3 +191,29 @@ input[type="range"]::-webkit-slider-thumb {
         padding: 0.6rem 1rem;
     }
 }
+.seek-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+}
+
+#currentTime, #duration {
+  font-size: 0.9rem;
+  color: #5a6a7e;
+  min-width: 45px;
+}
+
+#currentTime {
+  text-align: right;
+  margin-right: 10px;
+}
+
+#duration {
+  text-align: left;
+  margin-left: 10px;
+}
+
+#seekSlider {
+  flex-grow: 1;
+}

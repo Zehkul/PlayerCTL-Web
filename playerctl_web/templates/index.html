@@ -42,9 +42,10 @@
                 <button onclick="seek('5')">+5s</button>
                 <button onclick="seek('30')">+30s</button>
             </div>
-            <div class="slider-container">
-                <label for="seekSlider">Seek:</label>
-                <input type="range" id="seekSlider" min="0" max="100" value="0" />
+            <div class="seek-container">
+                <span id="currentTime">0:00</span>
+                <input type="range" id="seekSlider" min="0" max="100" value="0">
+                <span id="duration">0:00</span>
             </div>
             <div id="syncplayPlaylist">
                 <h3>Syncplay Playlist</h3>

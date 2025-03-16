@@ -73,6 +73,12 @@ function sendCommand(command) {
     .catch((error) => console.error("Error:", error));
 }
 
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
+
 function updateMetadata() {
   const player = getSelectedPlayer();
   fetch(`/api/metadata?player=${player}`)
@@ -87,8 +93,10 @@ function updateMetadata() {
       document.getElementById("thumb").style.display = data.thumbnail ? "inline-block" : "none";
 
       seekSlider.max = data.length;
+      document.getElementById("duration").textContent = formatTime(data.length);
       if (!isSeekSliderBeingDragged) {
         seekSlider.value = data.position;
+        document.getElementById("currentTime").textContent = formatTime(data.position);
       }
 
       // Update Media Session metadata including thumbnail as artwork
