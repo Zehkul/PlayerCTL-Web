@@ -507,22 +507,36 @@ function handleDoubleTap(index) {
 
 document.getElementById("darkModeToggle").addEventListener("click", function() {
   document.body.classList.toggle("dark-mode");
+  // Save user preference to localStorage
+  localStorage.setItem("darkModePreference", document.body.classList.contains("dark-mode"));
 });
 
-// Add this function to your existing JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-  // Check if user prefers dark mode
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    document.body.classList.add('dark-mode');
-  }
+  // Check for saved user preference first
+  const savedPreference = localStorage.getItem("darkModePreference");
 
-  // Listen for changes in system preference
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    if (event.matches) {
+  if (savedPreference !== null) {
+    // User has explicitly set a preference before
+    if (savedPreference === "true") {
       document.body.classList.add('dark-mode');
     } else {
       document.body.classList.remove('dark-mode');
     }
+  } else {
+    // No saved preference, use system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+    }
+  }
+
+  // Listen for changes in system preference, but only apply if user hasn't set preference
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    if (localStorage.getItem("darkModePreference") === null) {
+      if (event.matches) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
   });
 });
-
