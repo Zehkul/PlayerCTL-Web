@@ -61,6 +61,7 @@ body {
   width: 90%;
   max-width: 600px;
   margin: 2rem auto;
+  margin: 0 auto 2rem auto;
   transition: all 0.3s ease;
 }
 
